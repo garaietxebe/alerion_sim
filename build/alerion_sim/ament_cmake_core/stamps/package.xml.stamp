@@ -9,15 +9,19 @@
     parametrised ROS2 launch entry point.
   </description>
 
+  <maintainer email="garai@alerion.es">Garai Etxeberria</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake_python</buildtool_depend>
 
   <exec_depend>ros_gz_bridge</exec_depend>
+  <exec_depend>ros_gz_image</exec_depend>
   <exec_depend>ros_gz_sim</exec_depend>
+  <exec_depend>px4_msgs</exec_depend>
   <exec_depend>nav_msgs</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>rosgraph_msgs</exec_depend>
+  <exec_depend>rclpy</exec_depend>
   <exec_depend>python3-jinja2</exec_depend>
   <exec_depend>python3-yaml</exec_depend>
 

@@ -1,0 +1,4 @@
+source;share/alerion_sim/local_setup.bash
+source;share/alerion_sim/local_setup.dsv
+source;share/alerion_sim/local_setup.sh
+source;share/alerion_sim/local_setup.zsh

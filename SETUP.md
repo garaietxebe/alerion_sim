@@ -1,16 +1,15 @@
 # Guía de instalación — alerion_sim
 
-Entorno objetivo: **Ubuntu 24.04 LTS** con GPU dedicada recomendado.  
-Stack: ROS 2 Jazzy · Gazebo Harmonic · PX4 SITL v1.15 · Docker.
+Entorno: Ubuntu 24.04 con GPU dedicada recomendado.
 
 
-1. [Requisitos previos del sistema]  
-2. [Clonar los repositorios]
-4. [Construir la imagen Docker]
-5. [Ejecutar la simulación]
-6. [Instalación en host (sin Docker)] 
-7. [Variables de entorno de referencia] 
-8. [Solución de problemas frecuentes]
+1. Requisitos previos del sistema
+2. Clonar los repositorios
+4. Construir la imagen Docker
+5. Ejecutar la simulación
+6. Instalación en host (sin Docker) 
+7. Variables de entorno de referencia
+8. Solución de problemas frecuentes
 
 
 ## 1. Requisitos previos del sistema
@@ -21,7 +20,7 @@ sudo apt update && sudo apt install -y \
     git curl wget build-essential cmake ninja-build \
     python3-pip python3-venv python3-jinja2 python3-jsonschema \
     python3-numpy python3-packaging python3-toml \
-    xorg openbox x11-xserver-utils     
+    xorg openbox x11-xserver-utils
 
 ### Docker Engine
 
@@ -44,7 +43,7 @@ nvidia-smi
 # Si el equipo usa GPU integrada Intel/AMD el renderizado funciona igual;
 # solo afecta al rendimiento de Gazebo en el nivel full.
 
----
+
 
 ## 2. Clonar los repositorios
 
@@ -72,7 +71,7 @@ source ~/.venv/px4/bin/activate
 pip3 install -r Tools/setup/requirements.txt
 deactivate
 
----
+
 
 ## 3. Compilar PX4 para SITL
 
@@ -96,7 +95,7 @@ sudo apt install -y gcc-arm-none-eabi libgstreamer1.0-dev \
     libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-good \
     gstreamer1.0-plugins-bad libgstrtspserver-1.0-dev
 
----
+
 
 ## 4. Construir la imagen Docker
 
@@ -112,7 +111,7 @@ docker compose -f docker/docker-compose.yml build
 # Micro-XRCE-DDS Agent | latest main 
 # Python bindings gz | gz-transport13 + gz-msgs10 
 
----
+
 
 ## 5. Ejecutar la simulación
 
@@ -149,12 +148,12 @@ docker compose -f docker/docker-compose.yml run --rm validate
 El contenedor usa `network_mode: host`, así que los topics son visibles
 directamente si ROS 2 está instalado en el host:
 
-```bash
+
 source /opt/ros/jazzy/setup.bash
 ros2 topic list
-```
 
----
+
+
 
 ## 6. Instalación sin Docker
 
@@ -225,39 +224,32 @@ ros2 launch ~/Desktop/alerion/alerion_sim/launch/simulation.launch.py level:=ful
 
 
 
-## 8. Solución de problemas frecuentes
+## Solución de problemas frecuentes
 
 ### Gazebo no muestra ventana / error de display
 
-```bash
+
 # Antes de lanzar el contenedor:
 xhost +local:docker
 export DISPLAY=:0
-```
-
-### `Could not find package alerion_sim` o nodos que no aparecen
-
-El proyecto **no requiere `colcon build`**. Los scripts Python se llaman por ruta
-directa desde el launch file. Si aparece este error es porque se está usando
-`Node(package=...)` en vez de `ExecuteProcess`. No es necesaria ninguna acción.
 
 ### Errores de timestamp IMU / dron oscila
 
 Síntoma: `ERROR [vehicle_imu] timestamp error timestamp_sample: X, previous: Y`
 
-Causa: la física a 500 Hz (`max_step_size: 0.002`) satura la CPU y Gazebo rompe
-el lockstep con PX4. Solución aplicada en `config/levels/full.yaml`:
+Causa: la física a 500 Hz (`max_step_size: 0.002`) satura la CPU
 
-```yaml
 physics:
   max_step_size: 0.004   # 250 Hz — valor estable (igual que el nivel development)
-```
 
 ### QoS mismatch — topics de cámara vacíos
 
 `ros_gz_image` publica con `BEST_EFFORT`. Los suscriptores deben usar el mismo
-perfil o DDS descarta los mensajes silenciosamente. El nodo `camera_distortion`
-ya tiene esto configurado correctamente.
+perfil o DDS descarta los mensajes. 
+
+### `camera_distorted` no publica o publica una imagen grayscale estatica
+
+`Camera_distorted` todavia no funciona.
 
 ### Errores de mallas del modelo (`model://x500_base/meshes/...`)
 
@@ -265,13 +257,3 @@ Gazebo necesita encontrar los modelos de PX4 en `GZ_SIM_RESOURCE_PATH`.
 El launch file exporta esta variable automáticamente. Si el error persiste,
 verificar que `PX4_DIR` apunta al repositorio correcto y que está compilado.
 
-### NumPy 2.x incompatible con python3-opencv
-
-El nodo `camera_distortion` usa numpy puro (sin `cv2`). Si aparece el error
-`A module that was compiled using NumPy 1.x cannot be run in NumPy 2.x`
-en otro script, desinstalar `python3-opencv` del sistema y usar la versión pip:
-
-```bash
-sudo apt remove python3-opencv
-pip3 install --user opencv-python-headless
-```

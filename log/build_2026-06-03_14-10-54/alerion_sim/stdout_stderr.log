@@ -1,0 +1,67 @@
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found ament_cmake: 2.5.6 (/opt/ros/jazzy/share/ament_cmake/cmake)
+-- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter 
+-- Override CMake install command with custom implementation using symlinks instead of copying resources
+-- Configuring done (0.7s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/garai/Desktop/alerion_sim/build/alerion_sim
+-- Install configuration: ""
+-- Execute custom install script
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/launch/__pycache__/simulation.launch.cpython-312.pyc
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/launch/__pycache__/validation.launch.cpython-312.pyc
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/launch/simulation.launch.py
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/launch/validation.launch.py
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/config/levels/development.yaml
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/config/levels/full.yaml
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/config/levels/minimal.yaml
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/config/profiles/hard_vision.yaml
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/config/sensors/camera.yaml
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/config/sensors/lidar.yaml
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/config/simulation.yaml
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/config/validation.yaml
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/config/vehicle/x500.yaml
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/models/Warehouse/meshes/Asphalt010_1K_Color.jpg
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/models/Warehouse/meshes/Rough_Square_Concrete_Block.jpg
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/models/Warehouse/meshes/Tape001_1K_Color.png
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/models/Warehouse/meshes/Terrazzo005_1K_Color.jpg
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/models/Warehouse/meshes/ground.png
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/models/Warehouse/meshes/warehouse.dae
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/models/Warehouse/meshes/warehouse_colision.stl
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/models/Warehouse/model.config
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/models/Warehouse/model.sdf
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/models/Warehouse/thumbnails/1.png
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/models/Warehouse/thumbnails/2.png
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/models/Warehouse/thumbnails/3.png
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/models/Warehouse/thumbnails/4.png
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/models/x500_inspection/model.sdf.jinja
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/worlds/inspection.sdf.j2
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/ament_index/resource_index/package_run_dependencies/alerion_sim
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/ament_index/resource_index/parent_prefix_path/alerion_sim
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/environment/ament_prefix_path.sh
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/environment/ament_prefix_path.dsv
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/environment/path.sh
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/environment/path.dsv
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/local_setup.bash
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/local_setup.sh
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/local_setup.zsh
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/local_setup.dsv
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/package.dsv
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/ament_index/resource_index/packages/alerion_sim
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/cmake/alerion_simConfig.cmake
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/cmake/alerion_simConfig-version.cmake
+-- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/package.xml
+-- Installing: /home/garai/Desktop/alerion_sim/install/alerion_sim/lib/alerion_sim/validation_node
+-- Installing: /home/garai/Desktop/alerion_sim/install/alerion_sim/lib/alerion_sim/gimbal_controller
+-- Installing: /home/garai/Desktop/alerion_sim/install/alerion_sim/lib/alerion_sim/wind_turbulence
+-- Installing: /home/garai/Desktop/alerion_sim/install/alerion_sim/lib/alerion_sim/camera_distortion

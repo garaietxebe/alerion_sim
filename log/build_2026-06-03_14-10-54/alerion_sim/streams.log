@@ -1,0 +1,73 @@
+[0.008s] Invoking command in '/home/garai/Desktop/alerion_sim/build/alerion_sim': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/garai/Desktop/alerion_sim/alerion_sim -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/garai/Desktop/alerion_sim/install/alerion_sim
+[0.116s] -- The C compiler identification is GNU 13.3.0
+[0.161s] -- The CXX compiler identification is GNU 13.3.0
+[0.177s] -- Detecting C compiler ABI info
+[0.250s] -- Detecting C compiler ABI info - done
+[0.259s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.259s] -- Detecting C compile features
+[0.259s] -- Detecting C compile features - done
+[0.267s] -- Detecting CXX compiler ABI info
+[0.342s] -- Detecting CXX compiler ABI info - done
+[0.351s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.351s] -- Detecting CXX compile features
+[0.351s] -- Detecting CXX compile features - done
+[0.364s] -- Found ament_cmake: 2.5.6 (/opt/ros/jazzy/share/ament_cmake/cmake)
+[0.492s] -- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter 
+[0.562s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[0.685s] -- Configuring done (0.7s)
+[0.688s] -- Generating done (0.0s)
+[0.690s] -- Build files have been written to: /home/garai/Desktop/alerion_sim/build/alerion_sim
+[0.694s] Invoked command in '/home/garai/Desktop/alerion_sim/build/alerion_sim' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/garai/Desktop/alerion_sim/alerion_sim -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/garai/Desktop/alerion_sim/install/alerion_sim
+[0.695s] Invoking command in '/home/garai/Desktop/alerion_sim/build/alerion_sim': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/garai/Desktop/alerion_sim/build/alerion_sim -- -j8 -l8
+[0.726s] Invoked command in '/home/garai/Desktop/alerion_sim/build/alerion_sim' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/garai/Desktop/alerion_sim/build/alerion_sim -- -j8 -l8
+[0.733s] Invoking command in '/home/garai/Desktop/alerion_sim/build/alerion_sim': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/garai/Desktop/alerion_sim/build/alerion_sim
+[0.740s] -- Install configuration: ""
+[0.740s] -- Execute custom install script
+[0.740s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/launch/__pycache__/simulation.launch.cpython-312.pyc
+[0.748s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/launch/__pycache__/validation.launch.cpython-312.pyc
+[0.755s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/launch/simulation.launch.py
+[0.763s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/launch/validation.launch.py
+[0.771s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/config/levels/development.yaml
+[0.779s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/config/levels/full.yaml
+[0.787s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/config/levels/minimal.yaml
+[0.795s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/config/profiles/hard_vision.yaml
+[0.802s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/config/sensors/camera.yaml
+[0.810s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/config/sensors/lidar.yaml
+[0.817s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/config/simulation.yaml
+[0.825s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/config/validation.yaml
+[0.832s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/config/vehicle/x500.yaml
+[0.841s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/models/Warehouse/meshes/Asphalt010_1K_Color.jpg
+[0.848s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/models/Warehouse/meshes/Rough_Square_Concrete_Block.jpg
+[0.855s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/models/Warehouse/meshes/Tape001_1K_Color.png
+[0.863s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/models/Warehouse/meshes/Terrazzo005_1K_Color.jpg
+[0.870s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/models/Warehouse/meshes/ground.png
+[0.877s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/models/Warehouse/meshes/warehouse.dae
+[0.884s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/models/Warehouse/meshes/warehouse_colision.stl
+[0.892s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/models/Warehouse/model.config
+[0.899s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/models/Warehouse/model.sdf
+[0.906s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/models/Warehouse/thumbnails/1.png
+[0.913s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/models/Warehouse/thumbnails/2.png
+[0.920s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/models/Warehouse/thumbnails/3.png
+[0.927s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/models/Warehouse/thumbnails/4.png
+[0.934s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/models/x500_inspection/model.sdf.jinja
+[0.942s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/worlds/inspection.sdf.j2
+[0.949s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/ament_index/resource_index/package_run_dependencies/alerion_sim
+[0.956s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/ament_index/resource_index/parent_prefix_path/alerion_sim
+[0.963s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/environment/ament_prefix_path.sh
+[0.970s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/environment/ament_prefix_path.dsv
+[0.977s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/environment/path.sh
+[0.983s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/environment/path.dsv
+[0.990s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/local_setup.bash
+[0.997s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/local_setup.sh
+[1.004s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/local_setup.zsh
+[1.011s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/local_setup.dsv
+[1.018s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/package.dsv
+[1.025s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/ament_index/resource_index/packages/alerion_sim
+[1.032s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/cmake/alerion_simConfig.cmake
+[1.039s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/cmake/alerion_simConfig-version.cmake
+[1.046s] -- Symlinking: /home/garai/Desktop/alerion_sim/install/alerion_sim/share/alerion_sim/package.xml
+[1.053s] -- Installing: /home/garai/Desktop/alerion_sim/install/alerion_sim/lib/alerion_sim/validation_node
+[1.053s] -- Installing: /home/garai/Desktop/alerion_sim/install/alerion_sim/lib/alerion_sim/gimbal_controller
+[1.053s] -- Installing: /home/garai/Desktop/alerion_sim/install/alerion_sim/lib/alerion_sim/wind_turbulence
+[1.053s] -- Installing: /home/garai/Desktop/alerion_sim/install/alerion_sim/lib/alerion_sim/camera_distortion
+[1.054s] Invoked command in '/home/garai/Desktop/alerion_sim/build/alerion_sim' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/garai/Desktop/alerion_sim/build/alerion_sim
