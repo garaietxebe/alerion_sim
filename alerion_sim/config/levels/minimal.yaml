@@ -1,0 +1,40 @@
+# Level: minimal
+# Ajustes
+#   - Supresión de renderizado visual: Gazebo headless (-s), sin GUI, sin
+#     plugins de cámara ni lidar.
+#   - Física reducida al mínimo La gravedad estándar
+#     (-9.81 m/s²) se mantiene porque PX4 EKF2 la necesita para la
+#     alineación inicial del acelerómetro (tilt-alignment); con gravedad=0
+#     EKF2 no puede inicializar la estimación de orientación.
+#   - Sólo sensores básicos de vuelo: IMU, barómetro, GPS, brújula Sin cámara, sin lidar.
+#   - PX4 SITL activo + MicroXRCE-DDS bridge.
+#
+
+physics:
+  enabled: true          # motor ODE activo (PX4 necesita que Gazebo tickee)
+  gravity_z: -9.81       # gravedad estándar — requerida por PX4 EKF2
+  real_time_factor: 1.0  # tiempo real (PX4 espera reloj 1:1)
+  max_step_size: 0.004
+
+rendering:
+  enabled: false         # headless: Gazebo se lanza con -s
+  headless: true         # añade flag -s a gz sim (server-only, sin GUI)
+  shadows: false
+  pbr: false
+
+sensors:
+  lidar:
+    enabled: false
+    noise: false
+  camera:
+    enabled: false
+    noise: false
+  imu:
+    enabled: true        
+
+wind:
+  enabled: false
+
+simulation:
+  px4:
+    start_px4: true     

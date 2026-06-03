@@ -1,0 +1,110 @@
+# Level: full  (Alta Fidelidad / QA)
+# Qué está activo:
+#   - Física ODE con paso de 0.002 ms 
+#   - lidar: 90° × 32 haces × 20 Hz   
+#   - Cámara: 1280×720 @ 30 Hz
+#   - Viento: perturbación gaussiana
+
+
+physics:
+  enabled: true
+  gravity_z: -9.81
+  real_time_factor: 1.0
+  max_step_size: 0.002          
+
+rendering:
+  enabled: true
+  headless: false
+  shadows: true
+  pbr: true                    
+
+sensors:
+  lidar:
+    enabled: true
+    noise: true
+    noise_stddev: 0.01        
+  camera:
+    enabled: true
+    noise: true
+    noise_mean: 0.0
+    noise_stddev: 0.007        
+  imu:
+    enabled: true
+    noise: true
+
+wind:
+  enabled: true
+  linear_velocity_x: 2.0      
+  linear_velocity_y: 0.5     
+  linear_velocity_z: 0.0
+
+  turbulence:
+    enabled: true
+    #modelo plumb bob
+    intensity:        0.8   
+    correlation_time: 3.0   
+    update_rate:      10.0  
+    world_name:       inspection
+
+simulation:
+  px4:
+    start_px4: true
+
+# Sobreescrituras del lidar para el nivel 
+# Mismo arco frontal de 90° que development; nube de rayos más densa y mayor tasa.
+lidar:
+  update_rate: 20               # Hz  (frente a 15 en development)
+  vertical:
+    samples: 32                 # 32 haces, ~1.9° de separación en ±15°  (frente a 16 en development)
+
+# Sobreescritura de resolución de cámara y óptica para el nivel full
+# full:       1280×720   =  921 600 px  (3× trabajo GPU de render) 
+camera:
+  update_rate: 30            # Hz
+  image:
+    width:  1280             # 1280×720 = 921 600 px  (HD 720p)
+    height: 720
+  distortion_enabled: true
+  distortion:
+    k1:  -0.45        
+    k2:  0.18        
+    k3:  0.0         
+    p1:  0.003       
+    p2: -0.002       
+
+  gimbal:
+    #paquete de ajustes de gimbal para que se aproximen a modelos realistas
+    # PID desajustado comparado con development
+    p_gain:  0.8
+    i_gain:  0.01
+    d_gain:  0.08
+    i_max:   0.3
+    cmd_max: 0.3
+
+    velocity_max: 0.5          
+
+    input_filter_hz: 3.0        
+
+    feedback_filter_hz: 20.0   
+
+    deadband: 0.005             
+
+    com_offset: 0.02            
+
+    motor_inertia: 0.0003       
+
+    mode: follow
+    follow_smoothing: 0.3       
+
+# Cámara fija nadir (orientada hacia abajo) – desactivada 
+
+nadir_camera:
+  enabled: false
+  update_rate: 15              
+  image:
+    width:  1920
+    height: 1080
+    hfov:   1.5708            
+  clip:
+    near: 0.1
+    far:  80.0

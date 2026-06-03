@@ -1,0 +1,38 @@
+# Parámetros del sensor LiDAR – escáner de rango 3D (16 haces, arco de 90°)
+# Modela un LiDAR de 16 canales orientado hacia adelante para inspección de corto alcance.
+#
+# Horizontal: arco de 90° orientado al frente (±45° desde la nariz del dron).
+#             90 muestras a resolución de 1°.
+# Vertical:   16 haces abarcando ±15° (−15° a +15°) a ~2° de separación.
+#
+# Publica dos topics en Gazebo:
+#   /lidar        → gz.msgs.LaserScan       (corte horizontal 2D, nodo de validación)
+#   /lidar/points → gz.msgs.PointCloudPacked (nube de puntos 3D completa, navegación)
+lidar:
+  type: gpu_lidar
+  update_rate: 15              
+
+  horizontal:
+    samples: 90                
+    min_angle: -0.7854         
+    max_angle:  0.7854        
+
+  vertical:
+    samples: 16                
+    min_angle: -0.2618        
+    max_angle:  0.2618         
+
+  range:
+    min: 0.15                  
+    max: 15.0                  
+    resolution: 0.01           
+
+  noise_stddev: 0.008          
+
+  pose:                       
+    x: 0.0
+    y: 0.0
+    z: 0.08
+    roll: 0.0
+    pitch: 0.0
+    yaw: 0.0

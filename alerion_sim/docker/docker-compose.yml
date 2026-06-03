@@ -1,0 +1,92 @@
+# Uso
+#   # Simulación de alta fidelidad (por defecto)
+#   docker compose run --rm sim level:=full
+#
+#   # Nivel development con perfil de sensores vision
+#   docker compose run --rm sim level:=development sensor_profile:=vision
+#
+#   # Perfil hard-vision (1280×720 + distorsión + gimbal realista)
+#   docker compose run --rm sim level:=development sensor_profile:=hard_vision
+#
+#   # Validación + monitorización de carga computacional (ejecutar mientras la sim está activa)
+#   docker compose run --rm validate
+#
+#   # Shell interactivo con el mismo entorno
+#   docker compose run --rm shell
+#
+# Para GUI (full / development) en Linux X11, ejecutar una vez antes de lanzar:
+#   xhost +local:docker
+# 
+
+# Entorno compartido — incluido por cada servicio mediante anclas YAML
+x-env: &default-env
+  - DISPLAY=${DISPLAY}
+  - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
+  - PX4_DIR=/px4
+  - QT_QPA_PLATFORM=xcb
+  - GZ_VERSION=harmonic        # requerido por el CLI gz (topic de viento, stats)
+  - FASTRTPS_DEFAULT_PROFILES_FILE=/alerion_sim/docker/fastdds_localhost.xml
+
+x-volumes: &default-volumes
+  - ..:/alerion_sim
+  - ${PX4_DIR:-/home/garai/Desktop/PX4-Autopilot}:/px4
+  - /tmp/.X11-unix:/tmp/.X11-unix
+  - gz_logs:/root/.gz
+
+services:
+
+  # Servicio principal de simulación – Gazebo + PX4 SITL + puentes + controladores
+  sim:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: alerion_sim:latest
+    network_mode: host          # comparte dominio ROS 2 DDS con el host
+    pid: host                   # expone procesos del host para que validate los vea
+    cap_add:
+      - SYS_PTRACE              # permite que psutil / pidstat inspeccionen otros PIDs
+    environment: *default-env
+    volumes: *default-volumes
+
+    # Límite de CPU / memoria 
+    deploy:
+      resources:
+        limits:
+          cpus: "4"
+          memory: "8G"
+
+  # Servicio de validación + monitorización de carga computacional
+  # Se ejecuta junto al contenedor `sim`, comparte su espacio de PIDs para poder
+  # sondear el uso de recursos de gz-sim / px4 / MicroXRCEAgent / puentes.
+  # Salidas: /tmp/alerion_validation.csv  y  /tmp/alerion_compute.csv
+  validate:
+    image: alerion_sim:latest
+    network_mode: host
+    pid: host                   
+    cap_add:
+      - SYS_PTRACE
+    environment: *default-env
+    volumes: *default-volumes
+    entrypoint: ["/bin/bash", "-c",
+      "source /opt/ros/jazzy/setup.bash \
+    && source /opt/px4_msgs_ws/install/setup.bash \
+    && ros2 launch /alerion_sim/launch/validation.launch.py \"$@\"", "--"]
+
+  # Shell interactivo
+  shell:
+    image: alerion_sim:latest
+    network_mode: host
+    pid: host
+    cap_add:
+      - SYS_PTRACE
+    environment: *default-env
+    volumes: *default-volumes
+    entrypoint: ["/bin/bash", "-c",
+      "source /opt/ros/jazzy/setup.bash \
+    && source /opt/px4_msgs_ws/install/setup.bash \
+    && exec bash"]
+    stdin_open: true
+    tty: true
+
+volumes:
+  gz_logs:

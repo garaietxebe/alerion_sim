@@ -1,0 +1,463 @@
+{#
+  x500_inspection – Plantilla Jinja2 del modelo
+  Renderizada en tiempo de lanzamiento por simulation.launch.py.
+
+  POR QUÉ ESTRUCTURA PLANA:
+    Gazebo Harmonic tiene un bug con includes anidados de merge='true'. Incluir 'x500'
+    (que a su vez incluye 'x500_base' con merge='true') causa que el base_link de
+    x500_base aparezca dos veces → error "Non-unique name[base_link]".
+    Solución: incluir 'x500_base' directamente (un nivel de merge) e inline los
+    plugins de motor de x500. Funcionalmente idéntico a incluir 'x500'.
+
+  Variables de contexto (inyectadas desde la config YAML fusionada):
+    sensors_lidar_enabled   bool
+    sensors_lidar_noise     bool
+    sensors_camera_enabled  bool
+    sensors_camera_noise    bool
+    lidar                   dict   – desde config/sensors/lidar.yaml
+    camera                  dict   – desde config/sensors/camera.yaml
+
+  NO editar este archivo para cambiar parámetros.
+  Editar config/sensors/lidar.yaml o config/sensors/camera.yaml en su lugar.
+#}
+<?xml version="1.0" encoding="UTF-8"?>
+<sdf version='1.9'>
+  <model name='x500_inspection'>
+
+    <!-- 
+         Frame base en PX4, los plugins/config extra se describen a continuacion
+    -->
+    <include merge='true'>
+      <uri>model://x500_base</uri>
+    </include>
+
+    <!--
+         Publisher de odomoteria, lo usamos para las validaciones, checks...
+    -->
+    <plugin filename="gz-sim-odometry-publisher-system"
+            name="gz::sim::systems::OdometryPublisher">
+      <dimensions>3</dimensions>
+    </plugin>
+
+    <!-- Plugins del modelo de motor (de x500/model.sdf) -->
+    <plugin filename="gz-sim-multicopter-motor-model-system"
+            name="gz::sim::systems::MulticopterMotorModel">
+      <jointName>rotor_0_joint</jointName>
+      <linkName>rotor_0</linkName>
+      <turningDirection>ccw</turningDirection>
+      <timeConstantUp>0.0125</timeConstantUp>
+      <timeConstantDown>0.025</timeConstantDown>
+      <maxRotVelocity>1000.0</maxRotVelocity>
+      <motorConstant>8.54858e-06</motorConstant>
+      <momentConstant>0.016</momentConstant>
+      <commandSubTopic>command/motor_speed</commandSubTopic>
+      <motorNumber>0</motorNumber>
+      <rotorDragCoefficient>8.06428e-05</rotorDragCoefficient>
+      <rollingMomentCoefficient>1e-06</rollingMomentCoefficient>
+      <rotorVelocitySlowdownSim>10</rotorVelocitySlowdownSim>
+      <motorType>velocity</motorType>
+    </plugin>
+    <plugin filename="gz-sim-multicopter-motor-model-system"
+            name="gz::sim::systems::MulticopterMotorModel">
+      <jointName>rotor_1_joint</jointName>
+      <linkName>rotor_1</linkName>
+      <turningDirection>ccw</turningDirection>
+      <timeConstantUp>0.0125</timeConstantUp>
+      <timeConstantDown>0.025</timeConstantDown>
+      <maxRotVelocity>1000.0</maxRotVelocity>
+      <motorConstant>8.54858e-06</motorConstant>
+      <momentConstant>0.016</momentConstant>
+      <commandSubTopic>command/motor_speed</commandSubTopic>
+      <motorNumber>1</motorNumber>
+      <rotorDragCoefficient>8.06428e-05</rotorDragCoefficient>
+      <rollingMomentCoefficient>1e-06</rollingMomentCoefficient>
+      <rotorVelocitySlowdownSim>10</rotorVelocitySlowdownSim>
+      <motorType>velocity</motorType>
+    </plugin>
+    <plugin filename="gz-sim-multicopter-motor-model-system"
+            name="gz::sim::systems::MulticopterMotorModel">
+      <jointName>rotor_2_joint</jointName>
+      <linkName>rotor_2</linkName>
+      <turningDirection>cw</turningDirection>
+      <timeConstantUp>0.0125</timeConstantUp>
+      <timeConstantDown>0.025</timeConstantDown>
+      <maxRotVelocity>1000.0</maxRotVelocity>
+      <motorConstant>8.54858e-06</motorConstant>
+      <momentConstant>0.016</momentConstant>
+      <commandSubTopic>command/motor_speed</commandSubTopic>
+      <motorNumber>2</motorNumber>
+      <rotorDragCoefficient>8.06428e-05</rotorDragCoefficient>
+      <rollingMomentCoefficient>1e-06</rollingMomentCoefficient>
+      <rotorVelocitySlowdownSim>10</rotorVelocitySlowdownSim>
+      <motorType>velocity</motorType>
+    </plugin>
+    <plugin filename="gz-sim-multicopter-motor-model-system"
+            name="gz::sim::systems::MulticopterMotorModel">
+      <jointName>rotor_3_joint</jointName>
+      <linkName>rotor_3</linkName>
+      <turningDirection>cw</turningDirection>
+      <timeConstantUp>0.0125</timeConstantUp>
+      <timeConstantDown>0.025</timeConstantDown>
+      <maxRotVelocity>1000.0</maxRotVelocity>
+      <motorConstant>8.54858e-06</motorConstant>
+      <momentConstant>0.016</momentConstant>
+      <commandSubTopic>command/motor_speed</commandSubTopic>
+      <motorNumber>3</motorNumber>
+      <rotorDragCoefficient>8.06428e-05</rotorDragCoefficient>
+      <rollingMomentCoefficient>1e-06</rollingMomentCoefficient>
+      <rotorVelocitySlowdownSim>10</rotorVelocitySlowdownSim>
+      <motorType>velocity</motorType>
+    </plugin>
+
+    {%- if sensors_lidar_enabled %}
+    <!-- 
+         Lidar, con parametros que extaemos de los config.
+    -->
+    <include merge='true'>
+      <uri>model://LW20</uri>
+      <pose relative_to='base_link'>
+        {{ lidar.pose.x }} {{ lidar.pose.y }} {{ lidar.pose.z }} 0 0 0
+      </pose>
+    </include>
+
+    <joint name='lidar_model_joint' type='fixed'>
+      <parent>base_link</parent>
+      <child>lw20_link</child>
+    </joint>
+
+    <link name='lidar_sensor_link'>
+      <pose relative_to='base_link'>
+        {{ lidar.pose.x }} {{ lidar.pose.y }} {{ lidar.pose.z }}
+        {{ lidar.pose.roll }} {{ lidar.pose.pitch }} {{ lidar.pose.yaw }}
+      </pose>
+      <inertial>
+        <mass>0.001</mass>
+        <inertia>
+          <ixx>0.00001</ixx><iyy>0.00001</iyy><izz>0.00001</izz>
+          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+        </inertia>
+      </inertial>
+
+      <sensor name='lidar' type='gpu_lidar'>
+        <topic>/lidar</topic>
+        <gz_frame_id>lidar_sensor_link</gz_frame_id>
+        <update_rate>{{ lidar.update_rate }}</update_rate>
+        <ray>
+          <scan>
+            <horizontal>
+              <samples>{{ lidar.horizontal.samples }}</samples>
+              <resolution>1</resolution>
+              <min_angle>{{ lidar.horizontal.min_angle }}</min_angle>
+              <max_angle>{{ lidar.horizontal.max_angle }}</max_angle>
+            </horizontal>
+            <vertical>
+              <samples>{{ lidar.vertical.samples }}</samples>
+              <resolution>1</resolution>
+              <min_angle>{{ lidar.vertical.min_angle }}</min_angle>
+              <max_angle>{{ lidar.vertical.max_angle }}</max_angle>
+            </vertical>
+          </scan>
+          <range>
+            <min>{{ lidar.range.min }}</min>
+            <max>{{ lidar.range.max }}</max>
+            <resolution>{{ lidar.range.resolution }}</resolution>
+          </range>
+          {%- if sensors_lidar_noise %}
+          <noise>
+            <type>gaussian</type>
+            <mean>0.0</mean>
+            <stddev>{{ lidar.noise_stddev }}</stddev>
+          </noise>
+          {%- endif %}
+        </ray>
+        <always_on>1</always_on>
+        <visualize>true</visualize>
+      </sensor>
+    </link>
+
+    <joint name='lidar_sensor_joint' type='fixed'>
+      <parent>base_link</parent>
+      <child>lidar_sensor_link</child>
+    </joint>
+    {%- endif %}
+
+    {%- if sensors_camera_enabled %}
+    <!-- 
+        Gimbal de 2 ejes
+        Parameteros desde los configyaml
+
+         Estructura dentro de GZ:
+           base_link
+             -> gimbal_roll_link   (eje X)
+                  -> camera_link   (eje Y)
+                       -> camara
+
+         Puentes y parametros resultantes
+           /gimbal/roll   std_msgs/Float64  →  gz.msgs.Double
+           /gimbal/pitch  std_msgs/Float64  →  gz.msgs.Double
+     -->
+
+    <!-- base gimbal-->
+    <link name='gimbal_base_link'>
+      <pose relative_to='base_link'>
+        {{ camera.pose.x }} {{ camera.pose.y }} {{ camera.pose.z }} 0 0 0
+      </pose>
+      <inertial>
+        <mass>0.01</mass>
+        <inertia>
+          <ixx>0.00001</ixx><iyy>0.00001</iyy><izz>0.00001</izz>
+          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+        </inertia>
+      </inertial>
+      <visual name='mount_plate'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><box><size>0.06 0.06 0.008</size></box></geometry>
+        <material>
+          <ambient>0.20 0.20 0.20 1</ambient>
+          <diffuse>0.20 0.20 0.20 1</diffuse>
+          <specular>0.4 0.4 0.4 1</specular>
+        </material>
+      </visual>
+      <collision name='mount_collision'>
+        <geometry><box><size>0.06 0.06 0.008</size></box></geometry>
+      </collision>
+    </link>
+    <joint name='gimbal_base_joint' type='fixed'>
+      <parent>base_link</parent>
+      <child>gimbal_base_link</child>
+    </joint>
+
+    <link name='gimbal_roll_link'>
+      <pose relative_to='gimbal_base_link'>0 0 0 0 0 0</pose>
+      <inertial>
+        <mass>0.02</mass>
+        <inertia>
+          <ixx>{{ camera.gimbal.motor_inertia }}</ixx>
+          <iyy>{{ camera.gimbal.motor_inertia }}</iyy>
+          <izz>{{ camera.gimbal.motor_inertia }}</izz>
+          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+        </inertia>
+      </inertial>
+      <visual name='roll_arm_left'>
+        <pose>0 0.03 -0.022 0 0 0</pose>
+        <geometry><box><size>0.008 0.008 0.044</size></box></geometry>
+        <material>
+          <ambient>0.14 0.14 0.14 1</ambient>
+          <diffuse>0.14 0.14 0.14 1</diffuse>
+          <specular>0.3 0.3 0.3 1</specular>
+        </material>
+      </visual>
+      <visual name='roll_arm_right'>
+        <pose>0 -0.03 -0.022 0 0 0</pose>
+        <geometry><box><size>0.008 0.008 0.044</size></box></geometry>
+        <material>
+          <ambient>0.14 0.14 0.14 1</ambient>
+          <diffuse>0.14 0.14 0.14 1</diffuse>
+          <specular>0.3 0.3 0.3 1</specular>
+        </material>
+      </visual>
+      <collision name='roll_arms_collision'>
+        <pose>0 0 -0.022 0 0 0</pose>
+        <geometry><box><size>0.008 0.068 0.044</size></box></geometry>
+      </collision>
+    </link>
+    <joint name='gimbal_roll_joint' type='revolute'>
+      <parent>gimbal_base_link</parent>
+      <child>gimbal_roll_link</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <limit>
+          <lower>{{ -camera.gimbal.roll_limit }}</lower>
+          <upper>{{ camera.gimbal.roll_limit }}</upper>
+          <effort>10</effort>
+          <velocity>{{ camera.gimbal.velocity_max }}</velocity>
+        </limit>
+        <dynamics><damping>0.5</damping></dynamics>
+      </axis>
+      <physics><ode><implicit_spring_damper>1</implicit_spring_damper></ode></physics>
+    </joint>
+
+
+    <link name='camera_link'>
+      <pose relative_to='gimbal_roll_link'>0 0 0 0 0 0</pose>
+      <inertial>
+        <mass>0.05</mass>
+        <pose>{{ camera.gimbal.com_offset }} 0 0 0 0 0</pose>
+        <inertia>
+          <ixx>{{ camera.gimbal.motor_inertia }}</ixx>
+          <iyy>{{ camera.gimbal.motor_inertia }}</iyy>
+          <izz>{{ camera.gimbal.motor_inertia }}</izz>
+          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+        </inertia>
+      </inertial>
+
+
+      <visual name='camera_body'>
+        <pose>0 0 -0.02 0 0 0</pose>
+        <geometry><box><size>0.052 0.052 0.036</size></box></geometry>
+        <material>
+          <ambient>0.12 0.12 0.12 1</ambient>
+          <diffuse>0.12 0.12 0.12 1</diffuse>
+          <specular>0.25 0.25 0.25 1</specular>
+        </material>
+      </visual>
+      <visual name='lens_barrel'>
+        <pose>0.032 0 -0.02 0 1.5708 0</pose>
+        <geometry><cylinder><radius>0.014</radius><length>0.014</length></cylinder></geometry>
+        <material>
+          <ambient>0.08 0.08 0.08 1</ambient>
+          <diffuse>0.08 0.08 0.08 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+        </material>
+      </visual>
+      <visual name='lens_glass'>
+        <pose>0.040 0 -0.02 0 1.5708 0</pose>
+        <geometry><cylinder><radius>0.011</radius><length>0.003</length></cylinder></geometry>
+        <material>
+          <ambient>0.02 0.04 0.18 1</ambient>
+          <diffuse>0.02 0.04 0.18 1</diffuse>
+          <specular>0.8 0.8 0.9 1</specular>
+        </material>
+      </visual>
+      <collision name='camera_collision'>
+        <pose>0.005 0 -0.02 0 0 0</pose>
+        <geometry><box><size>0.065 0.052 0.036</size></box></geometry>
+      </collision>
+
+      <sensor name='camera' type='camera'>
+        <always_on>1</always_on>
+        <update_rate>{{ camera.update_rate }}</update_rate>
+        <visualize>false</visualize>
+        <topic>/camera/image_raw</topic>
+        <camera>
+          <horizontal_fov>{{ camera.image.hfov }}</horizontal_fov>
+          <image>
+            <width>{{ camera.image.width }}</width>
+            <height>{{ camera.image.height }}</height>
+          </image>
+          <clip>
+            <near>{{ camera.clip.near }}</near>
+            <far>{{ camera.clip.far }}</far>
+          </clip>
+          {%- if sensors_camera_noise %}
+          <noise>
+            <type>gaussian</type>
+            <mean>{{ camera.noise_mean }}</mean>
+            <stddev>{{ camera.noise_stddev }}</stddev>
+          </noise>
+          {%- endif %}
+          {%- if camera.distortion_enabled %}
+          <!-- distorision para generar output realista de camara-->
+          <distortion>
+            <k1>{{ camera.distortion.k1 }}</k1>
+            <k2>{{ camera.distortion.k2 }}</k2>
+            <k3>{{ camera.distortion.k3 }}</k3>
+            <p1>{{ camera.distortion.p1 }}</p1>
+            <p2>{{ camera.distortion.p2 }}</p2>
+            <center>0.5 0.5</center>
+          </distortion>
+          {%- endif %}
+        </camera>
+      </sensor>
+    </link>
+    <joint name='gimbal_pitch_joint' type='revolute'>
+      <parent>gimbal_roll_link</parent>
+      <child>camera_link</child>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <initial_value>0</initial_value>
+        <limit>
+          <lower>{{ camera.gimbal.pitch_min }}</lower>
+          <upper>{{ camera.gimbal.pitch_max }}</upper>
+          <effort>10</effort>
+          <velocity>{{ camera.gimbal.velocity_max }}</velocity>
+        </limit>
+        <dynamics><damping>0.5</damping></dynamics>
+      </axis>
+      <physics><ode><implicit_spring_damper>1</implicit_spring_damper></ode></physics>
+    </joint>
+
+    <!-- valores PID del gimbal -->
+    <plugin filename="gz-sim-joint-position-controller-system"
+            name="gz::sim::systems::JointPositionController">
+      <joint_name>gimbal_roll_joint</joint_name>
+      <sub_topic>command/gimbal_roll</sub_topic>
+      <p_gain>{{ camera.gimbal.p_gain }}</p_gain>
+      <i_gain>{{ camera.gimbal.i_gain }}</i_gain>
+      <d_gain>{{ camera.gimbal.d_gain }}</d_gain>
+      <i_max>{{ camera.gimbal.i_max }}</i_max>
+      <i_min>{{ -camera.gimbal.i_max }}</i_min>
+      <cmd_max>{{ camera.gimbal.cmd_max }}</cmd_max>
+      <cmd_min>{{ -camera.gimbal.cmd_max }}</cmd_min>
+    </plugin>
+
+    <plugin filename="gz-sim-joint-position-controller-system"
+            name="gz::sim::systems::JointPositionController">
+      <joint_name>gimbal_pitch_joint</joint_name>
+      <sub_topic>command/gimbal_pitch</sub_topic>
+      <p_gain>{{ camera.gimbal.p_gain }}</p_gain>
+      <i_gain>{{ camera.gimbal.i_gain }}</i_gain>
+      <d_gain>{{ camera.gimbal.d_gain }}</d_gain>
+      <i_max>{{ camera.gimbal.i_max }}</i_max>
+      <i_min>{{ -camera.gimbal.i_max }}</i_min>
+      <cmd_max>{{ camera.gimbal.cmd_max }}</cmd_max>
+      <cmd_min>{{ -camera.gimbal.cmd_max }}</cmd_min>
+    </plugin>
+    {%- endif %}
+
+    {%- if sensors_nadir_enabled %}
+    <!-- 
+         Cámara fija nadir (orientada hacia abajo)
+     -->
+    <link name='nadir_camera_link'>
+      <pose>0 0 -0.05 0 1.5708 0</pose>
+      <inertial>
+        <mass>0.05</mass>
+        <inertia>
+          <ixx>1e-5</ixx><iyy>1e-5</iyy><izz>1e-5</izz>
+          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+        </inertia>
+      </inertial>
+      <!-- Carcasa (puramente estetico)-->
+      <visual name='nadir_body'>
+        <geometry><box><size>0.04 0.04 0.025</size></box></geometry>
+        <material>
+          <ambient>0.08 0.08 0.08 1</ambient>
+          <diffuse>0.08 0.08 0.08 1</diffuse>
+        </material>
+      </visual>
+      <!-- Lente -->
+      <visual name='nadir_lens'>
+        <pose>0.022 0 0 0 1.5708 0</pose>
+        <geometry><cylinder><radius>0.011</radius><length>0.006</length></cylinder></geometry>
+        <material>
+          <ambient>0.04 0.04 0.18 1</ambient>
+          <diffuse>0.04 0.04 0.18 1</diffuse>
+        </material>
+      </visual>
+      <sensor name='nadir_camera' type='camera'>
+        <always_on>1</always_on>
+        <update_rate>{{ nadir_camera.update_rate }}</update_rate>
+        <visualize>false</visualize>
+        <topic>/camera/nadir_raw</topic>
+        <camera>
+          <horizontal_fov>{{ nadir_camera.image.hfov }}</horizontal_fov>
+          <image>
+            <width>{{ nadir_camera.image.width }}</width>
+            <height>{{ nadir_camera.image.height }}</height>
+          </image>
+          <clip>
+            <near>{{ nadir_camera.clip.near }}</near>
+            <far>{{ nadir_camera.clip.far }}</far>
+          </clip>
+        </camera>
+      </sensor>
+    </link>
+    <joint name='nadir_camera_joint' type='fixed'>
+      <parent>base_link</parent>
+      <child>nadir_camera_link</child>
+    </joint>
+    {%- endif %}
+
+  </model>
+</sdf>

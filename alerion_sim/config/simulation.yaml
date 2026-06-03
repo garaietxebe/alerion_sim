@@ -1,0 +1,66 @@
+# =============================================================================
+# Configuración maestra de simulación
+# =============================================================================
+# Para cambiar de nivel:
+#   ros2 launch alerion_sim simulation.launch.py level:=development
+# Para cambiar el perfil de sensores en modo development:
+#   ros2 launch alerion_sim simulation.launch.py level:=development sensor_profile:=vision
+# Cualquier clave puede ser sobreescrita por el YAML del nivel en config/levels/.
+# =============================================================================
+
+simulation:
+  # Nivel de fidelidad por defecto: minimal | development | full
+  level: full
+
+  vehicle:
+    model: x500_inspection     # apunta a models/x500_inspection/model.sdf.jinja
+    name: x500                 # nombre de instancia del modelo en Gazebo 
+    spawn:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      yaw: 0.0
+
+  world: inspection            # apunta a worlds/inspection.sdf.j2
+
+  px4:
+    firmware_dir: ""           # dejar vacío: autodetectado desde PX4_DIR
+    instance: 0
+    autostart_id: 4001         # airframe x500
+    start_px4: true            
+
+  dds:
+    transport: udp4
+    port: 8888
+
+  # Nota: ros_bridges no es leído por el launch file; los puentes se construyen
+  # manualmente en launch_setup() para poder condicionar por nivel/sensores.
+  # Se mantiene como documentación de los topics activos.
+  ros_bridges:
+    always:
+      - topic: /clock
+        ros_type: rosgraph_msgs/msg/Clock
+        gz_type: gz.msgs.Clock
+        direction: "[gz.msgs.Clock"
+      - topic: /model/x500_0/odometry
+        ros_type: nav_msgs/msg/Odometry
+        gz_type: gz.msgs.Odometry
+        direction: "[gz.msgs.Odometry"
+    lidar:
+      - topic: /lidar
+        ros_type: sensor_msgs/msg/LaserScan
+        gz_type: gz.msgs.LaserScan
+        direction: "[gz.msgs.LaserScan"
+      - topic: /lidar/points
+        ros_type: sensor_msgs/msg/PointCloud2
+        gz_type: gz.msgs.PointCloudPacked
+        direction: "[gz.msgs.PointCloudPacked"
+    camera:
+      - topic: /camera/image_raw
+        ros_type: sensor_msgs/msg/Image
+        gz_type: gz.msgs.Image
+        direction: "[gz.msgs.Image"          # bridgeado por ros_gz_image/image_bridge
+      - topic: /camera/image_raw/camera_info
+        ros_type: sensor_msgs/msg/CameraInfo
+        gz_type: gz.msgs.CameraInfo
+        direction: "[gz.msgs.CameraInfo"

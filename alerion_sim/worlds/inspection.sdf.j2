@@ -1,0 +1,1096 @@
+{#
+  Mundo de inspeccion – Jinja2 template
+  Renderizado por simulation.launch.py en carga.
+
+  variables:
+    physics_enabled       bool
+    physics_gravity_z     float   (0.0 minimal, -9.81 dev full)
+    physics_rtf           float   (0.0 = uncapped, 1.0 = real-time)
+    physics_step          float
+    rendering_enabled     bool
+    rendering_shadows     bool
+    rendering_pbr         bool    (false=flat materials, true=metal/roughness PBR)
+    wind_enabled          bool
+    wind_vel_x            float
+    wind_vel_y            float
+    wind_vel_z            float   
+
+  Editar el yaml de inspection para hacer cambios
+#}
+<?xml version="1.0" encoding="UTF-8"?>
+<sdf version="1.9">
+  <world name="inspection">
+
+    <!-- ================================================================
+         GUI layout
+         Añadimos todos los plugins requeridos por el GUI con un  bloque <gui>
+         Mnimimal ignora el gui
+    ================================================================ -->
+    {%- if rendering_enabled %}
+    
+    <gui fullscreen="0">
+
+      <!-- ── 3D viewport ─────────────────────────────────────────── -->
+      <plugin filename="MinimalScene" name="3D View">
+        <gz-gui>
+          <title>3D View</title>
+          <property type="bool"   key="showTitleBar">false</property>
+          <property type="string" key="state">docked</property>
+        </gz-gui>
+        <engine>ogre2</engine>
+        <scene>scene</scene>
+        <ambient_light>0.4 0.4 0.4</ambient_light>
+        <background_color>0.7 0.7 0.7</background_color>
+        <camera_pose>-8 0 5 0 0.4 0</camera_pose>
+      </plugin>
+
+      <!-- ── Headless scene helpers (5×5 px invisible) ─────────── -->
+      <plugin filename="GzSceneManager" name="Scene Manager">
+        <gz-gui>
+          <property type="bool"   key="showTitleBar">false</property>
+          <property type="bool"   key="resizable">false</property>
+          <property type="double" key="width">5</property>
+          <property type="double" key="height">5</property>
+          <property type="string" key="state">floating</property>
+        </gz-gui>
+      </plugin>
+      <plugin filename="InteractiveViewControl" name="Interactive view control">
+        <gz-gui>
+          <property type="bool"   key="showTitleBar">false</property>
+          <property type="bool"   key="resizable">false</property>
+          <property type="double" key="width">5</property>
+          <property type="double" key="height">5</property>
+          <property type="string" key="state">floating</property>
+        </gz-gui>
+      </plugin>
+      <plugin filename="CameraTracking" name="Camera Tracking">
+        <gz-gui>
+          <property type="bool"   key="showTitleBar">false</property>
+          <property type="bool"   key="resizable">false</property>
+          <property type="double" key="width">5</property>
+          <property type="double" key="height">5</property>
+          <property type="string" key="state">floating</property>
+        </gz-gui>
+      </plugin>
+      <plugin filename="SelectEntities" name="Select Entities">
+        <gz-gui>
+          <property type="bool"   key="showTitleBar">false</property>
+          <property type="bool"   key="resizable">false</property>
+          <property type="double" key="width">5</property>
+          <property type="double" key="height">5</property>
+          <property type="string" key="state">floating</property>
+        </gz-gui>
+      </plugin>
+      <plugin filename="EntityContextMenuPlugin" name="Entity context menu">
+        <gz-gui>
+          <property type="bool"   key="showTitleBar">false</property>
+          <property type="bool"   key="resizable">false</property>
+          <property type="double" key="width">5</property>
+          <property type="double" key="height">5</property>
+          <property type="string" key="state">floating</property>
+        </gz-gui>
+      </plugin>
+      <plugin filename="MarkerManager" name="Marker manager">
+        <gz-gui>
+          <property type="bool"   key="showTitleBar">false</property>
+          <property type="bool"   key="resizable">false</property>
+          <property type="double" key="width">5</property>
+          <property type="double" key="height">5</property>
+          <property type="string" key="state">floating</property>
+        </gz-gui>
+      </plugin>
+      <plugin filename="Spawn" name="Spawn Entities">
+        <gz-gui>
+          <property type="bool"   key="showTitleBar">false</property>
+          <property type="bool"   key="resizable">false</property>
+          <property type="double" key="width">5</property>
+          <property type="double" key="height">5</property>
+          <property type="string" key="state">floating</property>
+        </gz-gui>
+      </plugin>
+      <plugin filename="VisualizationCapabilities" name="Visualization Capabilities">
+        <gz-gui>
+          <property type="bool"   key="showTitleBar">false</property>
+          <property type="bool"   key="resizable">false</property>
+          <property type="double" key="width">5</property>
+          <property type="double" key="height">5</property>
+          <property type="string" key="state">floating</property>
+        </gz-gui>
+      </plugin>
+
+      
+
+      <!-- ── Bottom-left: play/pause/step ──────────────────────── -->
+      <plugin filename="WorldControl" name="World control">
+        <gz-gui>
+          <title>World control</title>
+          <property type="bool"   key="showTitleBar">false</property>
+          <property type="bool"   key="resizable">false</property>
+          <property type="double" key="height">100</property>
+          <property type="double" key="width">150</property>
+          <property type="double" key="z">1</property>
+          <property type="string" key="state">floating</property>
+          <anchors target="3D View">
+            <line own="left"   target="left"/>
+            <line own="bottom" target="bottom"/>
+          </anchors>
+        </gz-gui>
+        <play_pause>true</play_pause>
+        <step>true</step>
+        <start_paused>false</start_paused>
+      </plugin>
+
+      <!-- ── Bottom-right: sim time / RTF stats ────────────────── -->
+      <plugin filename="WorldStats" name="World stats">
+        <gz-gui>
+          <title>World stats</title>
+          <property type="bool"   key="showTitleBar">false</property>
+          <property type="bool"   key="resizable">false</property>
+          <property type="double" key="height">110</property>
+          <property type="double" key="width">290</property>
+          <property type="double" key="z">1</property>
+          <property type="string" key="state">floating</property>
+          <anchors target="3D View">
+            <line own="right"  target="right"/>
+            <line own="bottom" target="bottom"/>
+          </anchors>
+        </gz-gui>
+        <sim_time>true</sim_time>
+        <real_time>true</real_time>
+        <real_time_factor>true</real_time_factor>
+        <iterations>true</iterations>
+      </plugin>
+
+      
+
+
+      <plugin filename="ImageDisplay" name="Camera Feed">
+        <gz-gui>
+          <title>Camera Feed</title>
+          <property type="bool"   key="showTitleBar">true</property>
+          <property type="string" key="state">floating</property>
+          <property type="double" key="x">0</property>
+          <property type="double" key="y">0</property>
+          <property type="double" key="z">2</property>
+          <property type="double" key="width">400</property>
+          <property type="double" key="height">400</property>
+        </gz-gui>
+        <topic>/camera/image_raw</topic>
+        <topic_picker>false</topic_picker>
+      </plugin>
+
+    </gui>
+    {%- endif %}
+
+    <!-- 
+         System plugins
+         Todas las fisicas sensore y plugins de puentes estan cargados por PX4 server config
+     -->
+
+    <!-- Fisicas -->
+    <physics type="ode">
+      <max_step_size>{{ physics_step }}</max_step_size>
+      {%- if physics_enabled %}
+      <real_time_factor>{{ physics_rtf }}</real_time_factor>
+      <real_time_update_rate>{{ (1.0 / physics_step) | int }}</real_time_update_rate>
+      {%- else %}
+      <!-- minimal level: velocidad max sin gravedad para este nivel -->
+      <real_time_factor>0</real_time_factor>
+      <real_time_update_rate>0</real_time_update_rate>
+      {%- endif %}
+    </physics>
+
+    <gravity>0 0 {{ physics_gravity_z }}</gravity>
+    <magnetic_field>6e-06 2.3e-05 -4.2e-05</magnetic_field>
+    <atmosphere type="adiabatic"/>
+
+    <!-- 
+         Viento (con full solo)
+     -->
+    {%- if wind_enabled %}
+    <wind>
+      <linear_velocity>{{ wind_vel_x }} {{ wind_vel_y }} {{ wind_vel_z }}</linear_velocity>
+    </wind>
+    {%- endif %}
+
+    <!-- entorno -->
+    <scene>
+      <grid>false</grid>
+      <ambient>{{ '0.3 0.3 0.3 1' if rendering_pbr else '0.4 0.4 0.4 1' }}</ambient>
+      <background>0.7 0.7 0.7 1</background>
+      <shadows>{{ 'true' if rendering_enabled and rendering_shadows else 'false' }}</shadows>
+    </scene>
+
+    <!-- 
+         Sol direccional
+     -->
+    <light name="sunUTC" type="directional">
+      <pose>0 0 500 0 0 0</pose>
+      <cast_shadows>{{ 'true' if rendering_enabled and rendering_shadows else 'false' }}</cast_shadows>
+      <intensity>1</intensity>
+      <direction>0.001 0.625 -0.78</direction>
+      <diffuse>0.904 0.904 0.904 1</diffuse>
+      <specular>{{ '0.6 0.6 0.6 1' if rendering_pbr else '0.271 0.271 0.271 1' }}</specular>
+      <attenuation>
+        <range>2000</range>
+        <linear>0</linear>
+        <constant>1</constant>
+        <quadratic>0</quadratic>
+      </attenuation>
+    </light>
+
+    {%- if rendering_pbr %}
+    <light name="fill_north" type="directional">
+      <pose>0 0 200 0 0 0</pose>
+      <cast_shadows>false</cast_shadows>
+      <intensity>0.35</intensity>
+      <direction>-0.2 -0.5 -0.84</direction>
+      <diffuse>0.55 0.60 0.70 1</diffuse>
+      <specular>0.05 0.05 0.05 1</specular>
+    </light>
+    {%- endif %}
+
+    <!-- plano base -->
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>500 500</size>
+            </plane>
+          </geometry>
+          <surface>
+            <friction><ode/></friction>
+            <bounce/>
+            <contact/>
+          </surface>
+        </collision>
+        {%- if rendering_enabled %}
+        <visual name="visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>500 500</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.8 0.8 0.8 1</ambient>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+            <specular>0.8 0.8 0.8 1</specular>
+          </material>
+        </visual>
+        {%- endif %}
+        <enable_wind>false</enable_wind>
+      </link>
+    </model>
+
+
+    <model name='inspection_tower'>
+      <static>true</static>
+      <pose>33.9490966796875 -3.1090776920318604 0 0 0 -0.10698800157240447</pose>
+      <link name='link'>
+        <collision name='col'>
+          <pose>0 0 5 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>1 1 10</size>
+            </box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode/>
+            </friction>
+            <bounce/>
+            <contact/>
+          </surface>
+        </collision>
+        <visual name='base'>
+          <pose>0 0 0.29999999999999999 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>1.3999999999999999 1.3999999999999999 0.59999999999999998</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.550000012 0.550000012 0.5 1</ambient>
+            <diffuse>0.550000012 0.550000012 0.5 1</diffuse>
+            <specular>0.100000001 0.100000001 0.100000001 1</specular>
+          </material>
+        </visual>
+        <visual name='shaft'>
+          <pose>0 0 5 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.22</radius>
+              <length>9.4000000000000004</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <pbr>
+              <metal>
+                <albedo_map>model://shelves_high/materials/textures/Metal_Seamed.jpg</albedo_map>
+                <roughness>0.55</roughness>
+                <metalness>0.80</metalness>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='band_low'>
+          <pose>0 0 2.5 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.26000000000000001</radius>
+              <length>0.17999999999999999</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.899999976 0.400000006 0 1</ambient>
+            <diffuse>0.899999976 0.400000006 0 1</diffuse>
+          </material>
+        </visual>
+        <visual name='band_mid'>
+          <pose>0 0 5.5 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.26000000000000001</radius>
+              <length>0.17999999999999999</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.899999976 0.400000006 0 1</ambient>
+            <diffuse>0.899999976 0.400000006 0 1</diffuse>
+          </material>
+        </visual>
+        <visual name='band_high'>
+          <pose>0 0 8 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.26000000000000001</radius>
+              <length>0.17999999999999999</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.899999976 0.400000006 0 1</ambient>
+            <diffuse>0.899999976 0.400000006 0 1</diffuse>
+          </material>
+        </visual>
+        <visual name='platform'>
+          <pose>0 0 9.5500000000000007 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>1.2 1.2 0.10000000000000001</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.300000012 0.300000012 0.280000001 1</ambient>
+            <diffuse>0.300000012 0.300000012 0.280000001 1</diffuse>
+          </material>
+        </visual>
+        <visual name='rail_px'>
+          <pose>0.55000000000000004 0 9.75 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.040000000000000001 1.2 0.40000000000000002</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.699999988 0.699999988 0.699999988 1</ambient>
+            <diffuse>0.699999988 0.699999988 0.699999988 1</diffuse>
+          </material>
+        </visual>
+        <visual name='rail_nx'>
+          <pose>-0.55000000000000004 0 9.75 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.040000000000000001 1.2 0.40000000000000002</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.699999988 0.699999988 0.699999988 1</ambient>
+            <diffuse>0.699999988 0.699999988 0.699999988 1</diffuse>
+          </material>
+        </visual>
+        <visual name='rail_py'>
+          <pose>0 0.55000000000000004 9.75 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>1.2 0.040000000000000001 0.40000000000000002</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.699999988 0.699999988 0.699999988 1</ambient>
+            <diffuse>0.699999988 0.699999988 0.699999988 1</diffuse>
+          </material>
+        </visual>
+        <visual name='rail_ny'>
+          <pose>0 -0.55000000000000004 9.75 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>1.2 0.040000000000000001 0.40000000000000002</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.699999988 0.699999988 0.699999988 1</ambient>
+            <diffuse>0.699999988 0.699999988 0.699999988 1</diffuse>
+          </material>
+        </visual>
+        <visual name='mast'>
+          <pose>0 0 10.9 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.040000000000000001</radius>
+              <length>1.8</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.800000012 0.800000012 0.800000012 1</ambient>
+            <diffuse>0.800000012 0.800000012 0.800000012 1</diffuse>
+          </material>
+        </visual>
+        <visual name='nav_light'>
+          <pose>0 0 11.85 0 0 0</pose>
+          <geometry>
+            <sphere>
+              <radius>0.070000000000000007</radius>
+            </sphere>
+          </geometry>
+          <material>
+            <ambient>0.899999976 0.0500000007 0.0500000007 1</ambient>
+            <diffuse>0.899999976 0.0500000007 0.0500000007 1</diffuse>
+            <emissive>0.600000024 0 0 1</emissive>
+          </material>
+        </visual>
+        <pose>0 0 0 0 0 0</pose>
+        <inertial>
+          <pose>0 0 0 0 0 0</pose>
+          <mass>1</mass>
+          <inertia>
+            <ixx>1</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>1</iyy>
+            <iyz>0</iyz>
+            <izz>1</izz>
+          </inertia>
+        </inertial>
+        <enable_wind>false</enable_wind>
+      </link>
+      <self_collide>false</self_collide>
+    </model>
+
+
+<model name='storage_tank'>
+      <static>true</static>
+      <pose>32.046298980712891 -20.542383193969727 0 0 0 0</pose>
+      <link name='link'>
+        <collision name='col_body'>
+          <pose>0 0 1.6000000000000001 1.5708 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.90000000000000002</radius>
+              <length>4</length>
+            </cylinder>
+          </geometry>
+          <surface>
+            <friction>
+              <ode/>
+            </friction>
+            <bounce/>
+            <contact/>
+          </surface>
+        </collision>
+        <visual name='body'>
+          <pose>0 0 1.6000000000000001 1.5708 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.90000000000000002</radius>
+              <length>4</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <pbr>
+              <metal>
+                <albedo_map>model://shelves_high/materials/textures/Metal_Aluminum_Anodized.jpg</albedo_map>
+                <roughness>0.30</roughness>
+                <metalness>0.90</metalness>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='stripe'>
+          <pose>0 0 1.6000000000000001 1.5708 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.91000000000000003</radius>
+              <length>0.5</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.100000001 0.25 0.649999976 1</ambient>
+            <diffuse>0.100000001 0.25 0.649999976 1</diffuse>
+          </material>
+        </visual>
+        <visual name='dome_front'>
+          <pose>2 0 1.6000000000000001 0 0 0</pose>
+          <geometry>
+            <sphere>
+              <radius>0.90000000000000002</radius>
+            </sphere>
+          </geometry>
+          <material>
+            <ambient>0.920000017 0.920000017 0.899999976 1</ambient>
+            <diffuse>0.920000017 0.920000017 0.899999976 1</diffuse>
+            <specular>0.300000012 0.300000012 0.300000012 1</specular>
+          </material>
+        </visual>
+        <visual name='dome_rear'>
+          <pose>-2 0 1.6000000000000001 0 0 0</pose>
+          <geometry>
+            <sphere>
+              <radius>0.90000000000000002</radius>
+            </sphere>
+          </geometry>
+          <material>
+            <ambient>0.920000017 0.920000017 0.899999976 1</ambient>
+            <diffuse>0.920000017 0.920000017 0.899999976 1</diffuse>
+            <specular>0.300000012 0.300000012 0.300000012 1</specular>
+          </material>
+        </visual>
+        <visual name='pipe'>
+          <pose>0 0 2.5499999999999998 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.080000000000000002</radius>
+              <length>0.29999999999999999</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.5 0.5 0.5 1</ambient>
+            <diffuse>0.5 0.5 0.5 1</diffuse>
+          </material>
+        </visual>
+        <visual name='saddle_front'>
+          <pose>1.2 0 0.59999999999999998 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.29999999999999999 2 1.2</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.400000006 0.379999995 0.349999994 1</ambient>
+            <diffuse>0.400000006 0.379999995 0.349999994 1</diffuse>
+          </material>
+        </visual>
+        <visual name='saddle_rear'>
+          <pose>-1.2 0 0.59999999999999998 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.29999999999999999 2 1.2</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.400000006 0.379999995 0.349999994 1</ambient>
+            <diffuse>0.400000006 0.379999995 0.349999994 1</diffuse>
+          </material>
+        </visual>
+        <pose>0 0 0 0 0 0</pose>
+        <inertial>
+          <pose>0 0 0 0 0 0</pose>
+          <mass>1</mass>
+          <inertia>
+            <ixx>1</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>1</iyy>
+            <iyz>0</iyz>
+            <izz>1</izz>
+          </inertia>
+        </inertial>
+        <enable_wind>false</enable_wind>
+      </link>
+      <self_collide>false</self_collide>
+    </model>
+    <model name='warning_wall'>
+      <static>true</static>
+      <pose>29.496700286865234 32.212299346923828 0 0 0 1.5594179657685634</pose>
+      <link name='link'>
+        <collision name='col'>
+          <pose>0 0 2 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.29999999999999999 6 4</size>
+            </box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode/>
+            </friction>
+            <bounce/>
+            <contact/>
+          </surface>
+        </collision>
+        <visual name='wall_body'>
+          <pose>0 0 2 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.29999999999999999 6 4</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.779999971 0.75999999 0.699999988 1</ambient>
+            <diffuse>0.779999971 0.75999999 0.699999988 1</diffuse>
+          </material>
+        </visual>
+        <visual name='stripe_r1'>
+          <pose>0.16 0 0.5 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.02 6.0199999999999996 0.40000000000000002</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.850000024 0.100000001 0.100000001 1</ambient>
+            <diffuse>0.850000024 0.100000001 0.100000001 1</diffuse>
+          </material>
+        </visual>
+        <visual name='stripe_w1'>
+          <pose>0.16 0 1.1000000000000001 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.02 6.0199999999999996 0.40000000000000002</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.949999988 0.949999988 0.949999988 1</ambient>
+            <diffuse>0.949999988 0.949999988 0.949999988 1</diffuse>
+          </material>
+        </visual>
+        <visual name='stripe_r2'>
+          <pose>0.16 0 1.7 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.02 6.0199999999999996 0.40000000000000002</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.850000024 0.100000001 0.100000001 1</ambient>
+            <diffuse>0.850000024 0.100000001 0.100000001 1</diffuse>
+          </material>
+        </visual>
+        <visual name='stripe_w2'>
+          <pose>0.16 0 2.2999999999999998 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.02 6.0199999999999996 0.40000000000000002</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.949999988 0.949999988 0.949999988 1</ambient>
+            <diffuse>0.949999988 0.949999988 0.949999988 1</diffuse>
+          </material>
+        </visual>
+        <visual name='stripe_r3'>
+          <pose>0.16 0 2.8999999999999999 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.02 6.0199999999999996 0.40000000000000002</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.850000024 0.100000001 0.100000001 1</ambient>
+            <diffuse>0.850000024 0.100000001 0.100000001 1</diffuse>
+          </material>
+        </visual>
+        <visual name='coping'>
+          <pose>0 0 4.0599999999999996 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.38 6.0999999999999996 0.12</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.550000012 0.550000012 0.5 1</ambient>
+            <diffuse>0.550000012 0.550000012 0.5 1</diffuse>
+          </material>
+        </visual>
+        <visual name='bollard_l'>
+          <pose>0 -3.2999999999999998 0.5 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.12</radius>
+              <length>1</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.850000024 0.100000001 0.100000001 1</ambient>
+            <diffuse>0.850000024 0.100000001 0.100000001 1</diffuse>
+          </material>
+        </visual>
+        <visual name='bollard_r'>
+          <pose>0 3.2999999999999998 0.5 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.12</radius>
+              <length>1</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.850000024 0.100000001 0.100000001 1</ambient>
+            <diffuse>0.850000024 0.100000001 0.100000001 1</diffuse>
+          </material>
+        </visual>
+        <pose>0 0 0 0 0 0</pose>
+        <inertial>
+          <pose>0 0 0 0 0 0</pose>
+          <mass>1</mass>
+          <inertia>
+            <ixx>1</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>1</iyy>
+            <iyz>0</iyz>
+            <izz>1</izz>
+          </inertia>
+        </inertial>
+        <enable_wind>false</enable_wind>
+      </link>
+      <self_collide>false</self_collide>
+    </model>
+    <model name='industrial_building'>
+      <static>true</static>
+      <pose>42.466556549072266 39.881099700927734 0 0 0 0</pose>
+      <link name='link'>
+        <collision name='col_main'>
+          <pose>0 0 4 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>6 8 8</size>
+            </box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode/>
+            </friction>
+            <bounce/>
+            <contact/>
+          </surface>
+        </collision>
+        <collision name='col_hvac'>
+          <pose>-1 0 8.5999999999999996 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>2 3 1.2</size>
+            </box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode/>
+            </friction>
+            <bounce/>
+            <contact/>
+          </surface>
+        </collision>
+        <visual name='main_body'>
+          <pose>0 0 4 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>6 8 8</size>
+            </box>
+          </geometry>
+          <material>
+            <pbr>
+              <metal>
+                <roughness>0.90</roughness>
+                <metalness>0.05</metalness>
+                <albedo>0.62 0.60 0.56 1</albedo>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='facade_upper'>
+          <pose>-3.02 0 5.5 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.050000000000000003 7.7999999999999998 3</size>
+            </box>
+          </geometry>
+          <material>
+            <pbr>
+              <metal>
+                <roughness>0.40</roughness>
+                <metalness>0.55</metalness>
+                <albedo>0.12 0.35 0.38 1</albedo>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        <visual name='facade_lower'>
+          <pose>-3.02 0 2 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.050000000000000003 7.7999999999999998 3.5</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.319999993 0.319999993 0.300000012 1</ambient>
+            <diffuse>0.319999993 0.319999993 0.300000012 1</diffuse>
+          </material>
+        </visual>
+        <visual name='floor_strip'>
+          <pose>-3.04 0 3.7999999999999998 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.059999999999999998 8 0.20000000000000001</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.850000024 0.779999971 0.200000003 1</ambient>
+            <diffuse>0.850000024 0.779999971 0.200000003 1</diffuse>
+          </material>
+        </visual>
+        <visual name='windows_upper'>
+          <pose>-3.04 0 5.5 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.059999999999999998 5.5 0.80000000000000004</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.100000001 0.119999997 0.180000007 1</ambient>
+            <diffuse>0.100000001 0.119999997 0.180000007 1</diffuse>
+            <specular>0.600000024 0.600000024 0.699999988 1</specular>
+          </material>
+        </visual>
+        <visual name='windows_lower'>
+          <pose>-3.04 0 2.2000000000000002 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.059999999999999998 4.5 0.69999999999999996</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.100000001 0.119999997 0.180000007 1</ambient>
+            <diffuse>0.100000001 0.119999997 0.180000007 1</diffuse>
+            <specular>0.600000024 0.600000024 0.699999988 1</specular>
+          </material>
+        </visual>
+        <visual name='canopy'>
+          <pose>-3.2999999999999998 0 1.3999999999999999 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.59999999999999998 2.3999999999999999 0.12</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.200000003 0.200000003 0.200000003 1</ambient>
+            <diffuse>0.200000003 0.200000003 0.200000003 1</diffuse>
+          </material>
+        </visual>
+        <visual name='hvac'>
+          <pose>-1 0 8.5999999999999996 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>2 3 1.2</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.449999988 0.449999988 0.449999988 1</ambient>
+            <diffuse>0.449999988 0.449999988 0.449999988 1</diffuse>
+          </material>
+        </visual>
+        <visual name='exhaust_l'>
+          <pose>-0.20000000000000001 -0.80000000000000004 9.5 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.14999999999999999</radius>
+              <length>0.59999999999999998</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.349999994 0.349999994 0.349999994 1</ambient>
+            <diffuse>0.349999994 0.349999994 0.349999994 1</diffuse>
+          </material>
+        </visual>
+        <visual name='exhaust_r'>
+          <pose>-0.20000000000000001 0.80000000000000004 9.5 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.14999999999999999</radius>
+              <length>0.59999999999999998</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.349999994 0.349999994 0.349999994 1</ambient>
+            <diffuse>0.349999994 0.349999994 0.349999994 1</diffuse>
+          </material>
+        </visual>
+        <visual name='logo_panel'>
+          <pose>-3.04 2.5 5 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>0.059999999999999998 1.5 0.59999999999999998</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.899999976 0.300000012 0 1</ambient>
+            <diffuse>0.899999976 0.300000012 0 1</diffuse>
+            <emissive>0.200000003 0.0500000007 0 1</emissive>
+          </material>
+        </visual>
+        <pose>0 0 0 0 0 0</pose>
+        <inertial>
+          <pose>0 0 0 0 0 0</pose>
+          <mass>1</mass>
+          <inertia>
+            <ixx>1</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>1</iyy>
+            <iyz>0</iyz>
+            <izz>1</izz>
+          </inertia>
+        </inertial>
+        <enable_wind>false</enable_wind>
+      </link>
+      <self_collide>false</self_collide>
+    </model>
+
+    <!-- assets prefabricados SOLO en dev / full -->
+    {%- if rendering_enabled %}
+
+    <include>
+      <uri>model://helipad</uri>
+      <name>helipad</name>
+      <pose>0 0 0.01 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>model://arucotag</uri>
+      <name>arucotag_facade</name>
+      <pose>9.99 0 3.0 0 -1.5708 0</pose>
+    </include>
+
+    <include>
+      <uri>model://Warehouse</uri>
+      <name>warehouse</name>
+      <pose>30 0 0.05 0 0 3.14159</pose>
+    </include>
+
+    <model name="shelves_a">
+      <static>true</static>
+      <pose>26 6 0 0 0 0</pose>
+      <link name="link">
+        <collision name="col">
+          <geometry><mesh>
+            <uri>model://shelves_high/meshes/shelves_high_collision.dae</uri>
+            <scale>1 1.2 1.2</scale>
+          </mesh></geometry>
+        </collision>
+        <visual name="vis">
+          <geometry><mesh>
+            <uri>model://shelves_high/meshes/shelves_high.dae</uri>
+            <scale>1 1.2 1.2</scale>
+          </mesh></geometry>
+          {%- if rendering_pbr %}
+          <material><pbr><metal>
+            <albedo_map>model://shelves_high/materials/textures/Metal_Seamed.jpg</albedo_map>
+            <roughness>0.60</roughness><metalness>0.82</metalness>
+          </metal></pbr></material>
+          {%- endif %}
+        </visual>
+      </link>
+    </model>
+
+    <model name="shelves_b">
+      <static>true</static>
+      <pose>26 -6 0 0 0 0</pose>
+      <link name="link">
+        <collision name="col">
+          <geometry><mesh>
+            <uri>model://shelves_high/meshes/shelves_high_collision.dae</uri>
+            <scale>1 1.2 1.2</scale>
+          </mesh></geometry>
+        </collision>
+        <visual name="vis">
+          <geometry><mesh>
+            <uri>model://shelves_high/meshes/shelves_high.dae</uri>
+            <scale>1 1.2 1.2</scale>
+          </mesh></geometry>
+          {%- if rendering_pbr %}
+          <material><pbr><metal>
+            <albedo_map>model://shelves_high/materials/textures/Metal_Seamed.jpg</albedo_map>
+            <roughness>0.60</roughness><metalness>0.82</metalness>
+          </metal></pbr></material>
+          {%- endif %}
+        </visual>
+      </link>
+    </model>
+
+    {%- for box_pose in [
+          '28.0 -2.0 0 0 0 0',
+          '29.5 -2.0 0 0 0 0',
+          '28.0 -0.5 0 0 0 0',
+          '29.5 -0.5 0 0 0 1.5708' ] %}
+    <model name="crate_{{ loop.index }}">
+      <static>true</static>
+      <pose>{{ box_pose }}</pose>
+      <link name="link">
+        <inertial><mass>40</mass>
+          <inertia><ixx>1</ixx><iyy>1</iyy><izz>1</izz></inertia>
+        </inertial>
+        <collision name="col">
+          <pose>0 0 0.75 0 0 0</pose>
+          <geometry><box><size>1.20 0.80 1.50</size></box></geometry>
+        </collision>
+        <visual name="vis">
+          <pose>0 0 0.75 0 0 0</pose>
+          <geometry><mesh>
+            <uri>model://big_box/meshes/big_box.dae</uri>
+          </mesh></geometry>
+        </visual>
+      </link>
+    </model>
+    {%- endfor %}
+
+    {%- for pallet_pose in ['24.0 6.0 0 0 0 0', '24.0 -6.0 0 0 0 0'] %}
+    <model name="pallet_{{ loop.index }}">
+      <static>true</static>
+      <pose>{{ pallet_pose }}</pose>
+      <link name="link">
+        <inertial><mass>25</mass>
+          <inertia><ixx>1</ixx><iyy>1</iyy><izz>1</izz></inertia>
+        </inertial>
+        <collision name="top">
+          <pose>0 0 0.127 0 0 0</pose>
+          <geometry><box><size>1.20 0.80 0.042</size></box></geometry>
+        </collision>
+        <visual name="vis">
+          <pose>0 0 0.0635 0 0 0</pose>
+          <geometry><mesh>
+            <uri>model://europallet/meshes/europallet.dae</uri>
+          </mesh></geometry>
+          {%- if rendering_pbr %}
+          <material><pbr><metal>
+            <albedo_map>model://europallet/materials/textures/Wood_Grain_Dark.jpg</albedo_map>
+            <roughness>0.88</roughness><metalness>0.00</metalness>
+          </metal></pbr></material>
+          {%- endif %}
+        </visual>
+      </link>
+    </model>
+    {%- endfor %}
+
+    {%- endif %}{# rendering_enabled #}
+
+    <spherical_coordinates>
+      <surface_model>EARTH_WGS84</surface_model>
+      <world_frame_orientation>ENU</world_frame_orientation>
+      <latitude_deg>43.2955368</latitude_deg>
+      <longitude_deg>-1.987119</longitude_deg>
+      <elevation>0</elevation>
+    </spherical_coordinates>
+
+  </world>
+</sdf>

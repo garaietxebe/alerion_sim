@@ -1,0 +1,4 @@
+// Stub – satisfies file://media/materials/scripts/gazebo.material URI
+// referenced by Gazebo-classic DAE meshes (shelves_high, big_box, europallet).
+// Ogre2 (Gazebo Harmonic) ignores Ogre1 .material scripts at render time;
+// this file exists only to silence the SdfGenerator URI-not-found errors.

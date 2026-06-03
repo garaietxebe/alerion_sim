@@ -1,0 +1,2 @@
+Invoking command in '/home/garai/Desktop/tfg/build/alerion_sim': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/garai/Desktop/tfg -DROSIDL_GENERATOR_RS=OFF -DCMAKE_INSTALL_PREFIX=/home/garai/Desktop/tfg/install/alerion_sim
+Invoked command in '/home/garai/Desktop/tfg/build/alerion_sim' returned '1': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/garai/Desktop/tfg -DROSIDL_GENERATOR_RS=OFF -DCMAKE_INSTALL_PREFIX=/home/garai/Desktop/tfg/install/alerion_sim

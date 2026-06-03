@@ -1,0 +1,50 @@
+# Perfil de sensores: hard_vision
+# Cámara de máxima calidad sobre la física/renderizado del nivel development.
+# Pensado para probar algoritmos de visión con óptica realista sin pagar el
+# coste computacional completo del nivel full (sin viento, sin turbulencia,
+# paso de física de development, sin LiDAR).
+#
+# Uso:
+#   ros2 launch alerion_sim simulation.launch.py \
+#     level:=development sensor_profile:=hard_vision
+#
+# Qué añade sobre development + vision:
+#   - 1280×720 @ 30 Hz  (frente a 640×480 @ 30 Hz en vision básico)
+#   - Ruido gaussiano en la cámara
+#   - Gimbal realista
+
+sensors:
+  camera:
+    enabled: true
+    noise: true
+    noise_mean:   0.0
+    noise_stddev: 0.007   
+camera:
+  update_rate: 30
+  image:
+    width:  1280    
+    height: 720
+  distortion_enabled: true
+  distortion:
+    k1: -0.45      
+    k2:  0.18       
+    k3:  0.0        
+    p1:  0.003     
+    p2: -0.002      
+
+  gimbal:
+    # PID desajustado — convergencia más lenta (~300 ms)
+    p_gain:  0.8
+    i_gain:  0.01
+    d_gain:  0.08
+    i_max:   0.3
+    cmd_max: 0.3
+
+    velocity_max:      0.5     
+    input_filter_hz:   3.0     
+    feedback_filter_hz: 20.0   
+    deadband:          0.005   
+    com_offset:        0.02    
+    motor_inertia:     0.0003  
+    mode:              follow
+    follow_smoothing:  0.3     

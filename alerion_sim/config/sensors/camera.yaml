@@ -1,0 +1,86 @@
+# Parámetros de la cámara con gimbal – valores por defecto del hardware base
+#
+# Las sobreescrituras específicas de cada nivel están en config/levels/XXXX.yaml Como los YAMLs de sensores se cargan antes que
+# los YAMLs de nivel en load_config(), el YAML del nivel siempre prevalece en conflictos.
+camera:
+  type: camera
+  update_rate: 30              # Hz
+  image:
+    width: 640
+    height: 480
+    format: R8G8B8
+    hfov: 1.0472               # radianes ≈ 60°
+  clip:
+    near: 0.1
+    far: 300.0
+  noise_mean: 0.0
+  noise_stddev: 0.007          # intensidad de píxel normalizada (solo nivel full)
+
+  distortion_enabled: false
+  distortion:
+    k1:  0.0
+    k2:  0.0
+    k3:  0.0
+    p1:  0.0
+    p2:  0.0
+
+  pose:
+    x: 0.10
+    y: 0.0
+    z: 0.05
+    roll: 0.0
+    pitch: 0.0
+    yaw: 0.0
+
+  # Gimbal de 2 ejes (roll + pitch)
+  gimbal:
+    # Límites de recorrido de la articulación
+
+    roll_limit:    0.5236       
+    pitch_min:    -0.2618      
+    pitch_max:     1.5708       
+    default_pitch:  0.7854      
+
+    # Ganancias PID para el JointPositionController
+    p_gain:  1.5
+    i_gain:  0.02
+    d_gain:  0.3
+    i_max:   0.5
+    cmd_max: 0.5               
+
+
+    velocity_max: 3.0
+
+    # input_filter_hz – filtro paso bajo sobre la señal para general la latencia existente en entornos reales
+    input_filter_hz: 0.0
+
+    # feedback_filter_hz – filtro paso bajo sobre la realimentación de estabilizacion
+    feedback_filter_hz: 0.0
+
+    # deadband – error de posición por debajo del cual el controlador produce cero compensacion
+    deadband: 0.0
+
+    # com_offset – distancia entre el eje de la articulación y el centro de masa del link (metros) 0 = perfectamente equilibrado. Full usa 0.02 m para modelar una carga descentrada.
+    com_offset: 0.0
+
+    # motor_inertia – momento de inercia rotacional del eje del gimbal (kg·m²). Mayor = respuesta más lenta; visible en giros rápidos.
+    motor_inertia: 0.0001
+
+    # mode – "lock": la cámara mantiene un ángulo absoluto en el mundo // "follow": la cámara sigue un ángulo objetivo suavizado.
+    mode: lock
+
+    # follow_smoothing – constante de tiempo de suavizado de la compensacion
+    follow_smoothing: 0.0
+
+# Cámara fija nadir (orientada hacia abajo) – valores por defecto del hardware base
+# Desactivada por defecto
+nadir_camera:
+  enabled: false
+  update_rate: 15              
+  image:
+    width:  640
+    height: 480
+    hfov:   1.5708             
+  clip:
+    near: 0.1
+    far:  80.0

@@ -1,0 +1,67 @@
+# Level: development -- fidelidad media
+# 
+# Nodos y sistemas base para simulacion precisa, sistemas que simulan las distorsiones y el ruido desactivados 
+#   
+# Perfiles de sensores (pasar sensor_profile:=<perfil> al ejecutar el comando):
+#   navigation   lidar activo, cámara desactivada   (por defecto)
+#   vision       cámara activa, lidar desactivado
+#   hard_vision  camara activa, lidar desactivado, camara con mayor resolucion y tasa de refrescado menor
+#
+
+
+physics:
+  enabled: true
+  gravity_z: -9.81
+  real_time_factor: 1.0
+  max_step_size: 0.004
+
+rendering:
+  enabled: true
+  headless: false
+  shadows: false
+  pbr: false                   # solo materiales planos - se puede cambiar al empezar a analizar corrosiones en palas
+
+sensors:
+  lidar:
+    enabled: true             
+    noise: false
+  camera:
+    enabled: true              
+    noise: false
+  imu:
+    enabled: true
+    noise: false
+
+wind:
+  enabled: false
+
+simulation:
+  px4:
+    start_px4: true
+
+# Sobreescrituras de cámara/gimbal 
+
+camera:
+  gimbal:
+
+    #el gimbal actuara al menor de los cambios y estabilizara sin fallos en precision
+
+    p_gain:  1.5
+    i_gain:  0.02
+    d_gain:  0.3
+    i_max:   0.5
+    cmd_max: 0.5
+
+    velocity_max: 3.0
+
+    input_filter_hz:   0.0
+    feedback_filter_hz: 0.0
+
+    deadband: 0.0
+
+    com_offset: 0.0
+
+    motor_inertia: 0.0001
+
+    mode: lock
+    follow_smoothing: 0.0
