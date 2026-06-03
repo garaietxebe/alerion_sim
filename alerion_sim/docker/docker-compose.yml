@@ -47,8 +47,14 @@ services:
       - SYS_PTRACE              # permite que psutil / pidstat inspeccionen otros PIDs
     environment: *default-env
     volumes: *default-volumes
+    # AMD GPU passthrough — sin esto Gazebo usa software rendering (llvmpipe) → RTF ~12%
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - "44"    # video
+      - "992"   # render
 
-    # Límite de CPU / memoria 
+    # Límite de CPU / memoria
     deploy:
       resources:
         limits:
