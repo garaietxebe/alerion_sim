@@ -22,14 +22,12 @@
 x-env: &default-env
   - DISPLAY=${DISPLAY}
   - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
-  - PX4_DIR=/px4
   - QT_QPA_PLATFORM=xcb
   - GZ_VERSION=harmonic        # requerido por el CLI gz (topic de viento, stats)
   - FASTRTPS_DEFAULT_PROFILES_FILE=/alerion_sim/docker/fastdds_localhost.xml
 
 x-volumes: &default-volumes
   - ..:/alerion_sim
-  - ${PX4_DIR:-/home/garai/Desktop/PX4-Autopilot}:/px4
   - /tmp/.X11-unix:/tmp/.X11-unix
   - gz_logs:/root/.gz
 

@@ -233,7 +233,7 @@ class ValidationNode(Node):
         self._cmp_fh  = open(cmp_path, 'w', newline='')
         self._cmp_csv = csv.writer(self._cmp_fh)
         self._cmp_csv.writerow([
-            'rtf', 'cte_m',
+            'rtf',
             'sys_cpu_pct', 'sys_mem_mb',
             'gz_cpu_pct',  'gz_mem_mb',
             'px4_cpu_pct', 'px4_mem_mb',

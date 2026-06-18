@@ -4,8 +4,7 @@ validation.launch.py – Nodo de validación pasivo
 Ejecutar junto a simulation.launch.py mientras pilotas el dron manualmente.
 
 Registra:
-  - Desviación de pista cruzada desde la ruta de waypoints planificada  (por tick de odometría)
-  - Carga computacional: CPU / RAM por proceso              (cada 5 s por defecto)
+  - Carga computacional: CPU / RAM por proceso  (cada 5 s por defecto)
 
 Uso
 ---
