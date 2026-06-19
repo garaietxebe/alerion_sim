@@ -2,12 +2,12 @@
 
 [![ROS 2 Jazzy](https://img.shields.io/badge/ROS%202-Jazzy-blue?logo=ros)](https://docs.ros.org/en/jazzy/)
 [![Gazebo Harmonic](https://img.shields.io/badge/Gazebo-Harmonic-orange?logo=gazebo)](https://gazebosim.org/docs/harmonic/)
-[![PX4](https://img.shields.io/badge/PX4-v1.15-purple)](https://docs.px4.io/main/en/)
-[![Licencia](https://img.shields.io/badge/Licencia-Apache%202.0-green)](LICENSE)
+[![PX4](https://img.shields.io/badge/PX4-v1.17-purple)](https://docs.px4.io/main/en/)
+
 
 Framework de simulación para validación de inspección autónoma con drones.
 Integra PX4 SITL, Gazebo Harmonic y ROS 2 Jazzy en un único launch parametrizado,
-con tres niveles de fidelidad y perfiles de sensores intercambiables — todo gestionado
+con tres niveles de fidelidad y perfiles de sensores intercambiables. Gestionado
 por un sistema de configuración YAML con deep-merge en capas.
 
 ---
@@ -29,21 +29,21 @@ por un sistema de configuración YAML con deep-merge en capas.
 > Instrucciones completas de instalación: [INSTALL.md](INSTALL.md)
 
 ```bash
-# 1 — Permitir al contenedor acceder a la pantalla del host
+# 1  Permitir al contenedor acceder a la pantalla del host
 xhost +local:docker
 
-# 2 — Construir la imagen (solo la primera vez)
+# 2  Construir la imagen (solo la primera vez)
 cd ~/Desktop/alerion_sim/alerion_sim
 docker compose -f docker/docker-compose.yml build
 
-# 3 — Lanzar
+# 3  Lanzar
 docker compose -f docker/docker-compose.yml run --rm sim level:=full
 ```
 
 Otros comandos útiles:
 
 ```bash
-# Nivel development — sin ruido, sin distorsión, gimbal instantáneo
+# Nivel development  sin ruido, sin distorsión, gimbal instantáneo
 docker compose -f docker/docker-compose.yml run --rm sim level:=development
 
 # Development con perfil de visión
@@ -83,7 +83,7 @@ docker compose -f docker/docker-compose.yml run --rm validate
 graph TD
     PX4["PX4 SITL\n(px4_sitl_default)"]
     XRCE["MicroXRCE-DDS Agent\n(UDP 8888)"]
-    ROS2[["Bus ROS 2 DDS\n(dominio 0)"]]
+    ROS2[["Bus ROS 2 DDS"]]
     GZ["Gazebo Harmonic\n(servidor gz-sim)"]
     BRIDGE["ros_gz_bridge\n(parameter_bridge)"]
     IMGBRIDGE["ros_gz_image\n(image_bridge)"]
@@ -156,7 +156,7 @@ graph LR
 | `config/vehicle/x500.yaml` | Masa del chasis, disposición de motores, geometría del gimbal |
 | `config/profiles/hard_vision.yaml` | Sobreescritura de cámara HD + distorsión completa |
 
-Cualquier clave de una capa más profunda prevalece silenciosamente sobre la misma clave en capas anteriores — sin necesidad de duplicar valores.
+Cualquier clave de una capa más profunda prevalece silenciosamente sobre la misma clave en capas anteriores  sin necesidad de duplicar valores.
 
 ---
 
@@ -276,7 +276,7 @@ colcon build --symlink-install --packages-select alerion_sim
 source install/setup.bash
 ```
 
-### Docker — `Unable to find group render`
+### Docker  `Unable to find group render`
 
 Los nombres en `group_add` se resuelven dentro del contenedor. Usa GIDs numéricos:
 
