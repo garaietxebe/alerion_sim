@@ -257,6 +257,8 @@ def launch_setup(context: Any, *args: Any, **kwargs: Any) -> list[Any]:
                     dds.get("transport", "udp4"),
                     "-p",
                     str(dds.get("port", 8888)),
+                    "-v",
+                    "4",
                 ],
                 output="screen",
                 name="micro_xrce_dds",

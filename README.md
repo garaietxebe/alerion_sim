@@ -15,6 +15,7 @@ por un sistema de configuración YAML con deep-merge en capas.
 ## Índice
 
 - [Inicio rápido](#inicio-rápido)
+- [QGroundControl](#qgroundcontrol)
 - [Niveles de fidelidad](#niveles-de-fidelidad)
 - [Arquitectura](#arquitectura)
 - [Sistema de configuración](#sistema-de-configuración)
@@ -50,9 +51,40 @@ docker compose -f docker/docker-compose.yml run --rm sim level:=development
 docker compose -f docker/docker-compose.yml run --rm sim \
     level:=development sensor_profile:=vision
 
+# QGroundControl (en un segundo terminal mientras la sim está activa)
+docker compose -f docker/docker-compose.yml run --rm qgc
+
 # Nodo de validación (en un segundo terminal mientras la sim está activa)
 docker compose -f docker/docker-compose.yml run --rm validate
+```
 
+---
+
+## QGroundControl
+
+QGroundControl (v4.4.4) está incluido en la imagen Docker. Se ejecuta como un servicio independiente y se conecta automáticamente a PX4 SITL a través de MAVLink UDP 14550 en cuanto la simulación está activa.
+
+### Lanzar QGC
+
+```bash
+# 1  Permitir acceso a la pantalla del host (necesario una sola vez por sesión X)
+xhost +local:docker
+
+# 2  En un terminal, lanzar la simulación
+docker compose -f docker/docker-compose.yml run --rm sim level:=full
+
+# 3  En un segundo terminal, lanzar QGC
+docker compose -f docker/docker-compose.yml run --rm qgc
+```
+
+QGC detecta el vehículo automáticamente al conectarse (icono verde en la barra superior). No requiere ninguna configuración de enlace adicional si la simulación se lanzó antes.
+
+### Guardar misiones entre sesiones
+
+Los parámetros y misiones guardadas en QGC se persisten en el volumen Docker `qgc_settings`. El volumen sobrevive a `docker compose down`; solo se elimina con:
+
+```bash
+docker volume rm alerion_sim_qgc_settings
 ```
 
 ---

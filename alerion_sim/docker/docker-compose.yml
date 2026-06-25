@@ -1,30 +1,34 @@
-# Uso
-#   # Simulación de alta fidelidad (por defecto)
+# Usage
+#   Full fidelity simulation (default)
 #   docker compose run --rm sim level:=full
 #
-#   # Nivel development con perfil de sensores vision
+#   Development level with vision sensor profile
 #   docker compose run --rm sim level:=development sensor_profile:=vision
 #
-#   # Perfil hard-vision (1280×720 + distorsión + gimbal realista)
+#   Hard-vision profile (1280x720 + distortion + realistic gimbal)
 #   docker compose run --rm sim level:=development sensor_profile:=hard_vision
 #
-#   # Validación + monitorización de carga computacional (ejecutar mientras la sim está activa)
+#   Validation and compute load monitoring (run while sim is active)
 #   docker compose run --rm validate
 #
-#   # Shell interactivo con el mismo entorno
+#   QGroundControl (run while sim is active, connects via MAVLink UDP 14550)
+#   docker compose run --rm qgc
+#
+#   Interactive shell with the same environment
 #   docker compose run --rm shell
 #
-# Para GUI (full / development) en Linux X11, ejecutar una vez antes de lanzar:
+# For GUI services (full / development / qgc) on Linux X11, run once before launching:
 #   xhost +local:docker
-# 
+#
 
-# Entorno compartido — incluido por cada servicio mediante anclas YAML
+# Shared environment included by each service via YAML anchors
 x-env: &default-env
   - DISPLAY=${DISPLAY}
   - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
   - QT_QPA_PLATFORM=xcb
-  - GZ_VERSION=harmonic        # requerido por el CLI gz (topic de viento, stats)
+  - GZ_VERSION=harmonic
   - FASTRTPS_DEFAULT_PROFILES_FILE=/alerion_sim/docker/fastdds_localhost.xml
+  - DRI_PRIME=1
 
 x-volumes: &default-volumes
   - ..:/alerion_sim
@@ -33,40 +37,55 @@ x-volumes: &default-volumes
 
 services:
 
-  # Servicio principal de simulación – Gazebo + PX4 SITL + puentes + controladores
+  # Main simulation service: Gazebo + PX4 SITL + bridges + controllers
   sim:
     build:
       context: ..
       dockerfile: docker/Dockerfile
     image: alerion_sim:latest
-    network_mode: host          # comparte dominio ROS 2 DDS con el host
-    pid: host                   # expone procesos del host para que validate los vea
+    network_mode: host
+    pid: host
     cap_add:
-      - SYS_PTRACE              # permite que psutil / pidstat inspeccionen otros PIDs
+      - SYS_PTRACE
     environment: *default-env
     volumes: *default-volumes
-    # AMD GPU passthrough — sin esto Gazebo usa software rendering (llvmpipe) → RTF ~12%
+    # AMD GPU passthrough; without this Gazebo falls back to software rendering (llvmpipe) at ~12% RTF
     devices:
       - /dev/dri:/dev/dri
     group_add:
       - "44"    # video
       - "992"   # render
 
-    # Límite de CPU / memoria
     deploy:
       resources:
         limits:
           cpus: "4"
           memory: "8G"
 
-  # Servicio de validación + monitorización de carga computacional
-  # Se ejecuta junto al contenedor `sim`, comparte su espacio de PIDs para poder
-  # sondear el uso de recursos de gz-sim / px4 / MicroXRCEAgent / puentes.
-  # Salidas: /tmp/alerion_validation.csv  y  /tmp/alerion_compute.csv
+  # QGroundControl: connects to PX4 SITL via MAVLink UDP 14550 (auto-detected on host network)
+  # Runs as qgcuser (non-root) to avoid the QGC root warning.
+  qgc:
+    image: alerion_sim:latest
+    network_mode: host
+    user: qgcuser
+    environment: *default-env
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - qgc_settings:/home/qgcuser/.config/QGroundControl.org
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - "44"    # video
+      - "992"   # render
+    entrypoint: ["/opt/QGroundControl/AppRun"]
+
+  # Validation and compute load monitoring service
+  # Runs alongside the sim container; shares its PID namespace to probe gz-sim, px4,
+  # MicroXRCEAgent, and bridge resource usage.
   validate:
     image: alerion_sim:latest
     network_mode: host
-    pid: host                   
+    pid: host
     cap_add:
       - SYS_PTRACE
     environment: *default-env
@@ -76,7 +95,7 @@ services:
     && source /opt/px4_msgs_ws/install/setup.bash \
     && ros2 launch /alerion_sim/launch/validation.launch.py \"$@\"", "--"]
 
-  # Shell interactivo
+  # Interactive shell
   shell:
     image: alerion_sim:latest
     network_mode: host
@@ -94,3 +113,4 @@ services:
 
 volumes:
   gz_logs:
+  qgc_settings:
