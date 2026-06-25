@@ -1,0 +1,45 @@
+[project]
+name = "alerion_sim"
+version = "0.1.0"
+description = "Multi-level simulation framework for autonomous navigation validation"
+requires-python = ">=3.12"
+
+
+dependencies = [
+    "jinja2",
+    "pyyaml",
+    "psutil",
+]
+
+[project.optional-dependencies]
+dev = [
+    "mypy",
+    "ruff",
+]
+
+# Mypy
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+
+# Ruff
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle — errores de estilo
+    "F",   # pyflakes   — imports sin usar, nombres no definidos
+    "I",   # isort      — orden de imports
+    "UP",  # pyupgrade  — sintaxis moderna (e.g. list[x] en vez de List[x])
+    "B",   # bugbear    — patrones propensos a errores
+]
+ignore = [
+    "E501",  
+]
+
+[tool.ruff.format]
+quote-style = "double"

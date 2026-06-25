@@ -21,14 +21,13 @@
 #   xhost +local:docker
 #
 
-# Shared environment included by each service via YAML anchors
+# Shared environment (mapping format enables <<: merge key for per-service overrides)
 x-env: &default-env
-  - DISPLAY=${DISPLAY}
-  - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
-  - QT_QPA_PLATFORM=xcb
-  - GZ_VERSION=harmonic
-  - FASTRTPS_DEFAULT_PROFILES_FILE=/alerion_sim/docker/fastdds_localhost.xml
-  - DRI_PRIME=1
+  DISPLAY: ${DISPLAY}
+  ROS_DOMAIN_ID: ${ROS_DOMAIN_ID:-0}
+  QT_QPA_PLATFORM: xcb
+  GZ_VERSION: harmonic
+  FASTRTPS_DEFAULT_PROFILES_FILE: /alerion_sim/docker/fastdds_localhost.xml
 
 x-volumes: &default-volumes
   - ..:/alerion_sim
@@ -47,7 +46,10 @@ services:
     pid: host
     cap_add:
       - SYS_PTRACE
-    environment: *default-env
+    environment:
+      <<: *default-env
+      # DRI_PRIME=1 selects the discrete AMD GPU; without it Gazebo may use llvmpipe
+      DRI_PRIME: 1
     volumes: *default-volumes
     # AMD GPU passthrough; without this Gazebo falls back to software rendering (llvmpipe) at ~12% RTF
     devices:
@@ -68,7 +70,9 @@ services:
     image: alerion_sim:latest
     network_mode: host
     user: qgcuser
-    environment: *default-env
+    environment:
+      <<: *default-env
+      DRI_PRIME: 1
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
       - qgc_settings:/home/qgcuser/.config/QGroundControl.org
