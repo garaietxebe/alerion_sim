@@ -1,19 +1,18 @@
-# Parámetros del nodo de validación
-# Calcula el peso computacional total y el reparto por sistemas
+# Validation node parameters
+# Tracks compute load per process and topic health across the full system
 validation_node:
   ros__parameters:
 
     model_name:      x500_0
-    log_file:        /tmp/alerion_validation.csv   
-    compute_csv:     /tmp/alerion_compute.csv      
-    status_interval:  5.0   # cada cuanto imprime la situacion
+    log_file:        /tmp/alerion_validation.csv
+    compute_csv:     /tmp/alerion_compute.csv
+    status_interval: 10.0   # seconds between status prints
 
- 
-    waypoints:  #desactivados, la validacion se tiene que hacer a mano -- en cuanto se haga el vuelo automatizado se aplicaran los waypoints
-      - 0.0    
+    waypoints:  # disabled — validation is manual until automated flight is implemented
+      - 0.0
       - 0.0    #      (y)
       - 5.0    #      (z)
-      - 1.0    #      (desvio tolerable)
+      - 1.0    #      (tolerance)
       - 5.0    # 2
       - 0.0
       - 6.0
@@ -35,8 +34,8 @@ validation_node:
       - 5.0
       - 1.5
 
-    # CARGA COMPUTACIONAL  (psutil, transmitido a compute_csv cada 1/cpu_sample_hz s)
-    cpu_sample_hz: 0.2    # 0.2 Hz = cada 5 segundos
+    # COMPUTE LOAD  (psutil, written to compute_csv every 1/cpu_sample_hz s)
+    cpu_sample_hz: 0.2    # 0.2 Hz = every 5 seconds
 
     target_processes:
       - 'gz sim'
@@ -46,3 +45,19 @@ validation_node:
       - 'image_bridge'
       - 'gimbal_controller'
       - 'validation_node'
+
+    # TOPIC HEALTH  (polled every status_interval seconds alongside the status print)
+    # NOTE: validation.launch.py overrides expected_topics at runtime based on
+    # which sensors and bridges are actually enabled for the chosen level and
+    # sensor_profile.  The list below is only used when the node is started
+    # outside of the validation launch file (e.g. during manual testing).
+    expected_topics:
+      - '/clock'
+      - '/model/x500_0/odometry'
+      - '/model/x500_0/command/gimbal_pitch'
+      - '/model/x500_0/command/gimbal_roll'
+      - '/camera/image_raw'
+      - '/camera/image_raw/camera_info'
+      - '/camera/image_distorted'
+      - '/lidar'
+      - '/lidar/points'

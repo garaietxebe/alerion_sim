@@ -1,0 +1,46 @@
+[0.000000] (-) TimerEvent: {}
+[0.000186] (alerion_sim) JobQueued: {'identifier': 'alerion_sim', 'dependencies': OrderedDict()}
+[0.000435] (alerion_sim) JobStarted: {'identifier': 'alerion_sim'}
+[0.005685] (alerion_sim) JobProgress: {'identifier': 'alerion_sim', 'progress': 'cmake'}
+[0.006449] (alerion_sim) Command: {'cmd': ['/usr/bin/cmake', '/home/garai/Desktop/alerion_sim/alerion_sim', '-DCMAKE_INSTALL_PREFIX=/home/garai/Desktop/alerion_sim/install/alerion_sim'], 'cwd': '/home/garai/Desktop/alerion_sim/build/alerion_sim', 'env': OrderedDict({'GJS_DEBUG_TOPICS': 'JS ERROR;JS LOG', 'USE_LOCAL_OAUTH': '', 'AI_AGENT': 'claude-code_2-1-128_agent', 'USER': 'garai', 'CLAUDE_CODE_ENTRYPOINT': 'claude-desktop', 'GIT_EDITOR': 'true', 'XDG_SESSION_TYPE': 'wayland', 'CLAUDE_AGENT_SDK_VERSION': '0.2.128', 'CLUTTER_DISABLE_MIPMAPPED_TEXT': '1', 'SHLVL': '2', 'HOME': '/home/garai', 'CHROME_DESKTOP': 'claude-desktop.desktop', 'DISABLE_MICROCOMPACT': '1', 'OLDPWD': '/home/garai/Desktop/PX4-Autopilot/.claude/worktrees/dreamy-saha-b611c0', 'USE_STAGING_OAUTH': '', 'DESKTOP_SESSION': 'ubuntu', 'GIO_LAUNCHED_DESKTOP_FILE': '/usr/share/applications/claude-desktop.desktop', 'GNOME_SHELL_SESSION_MODE': 'ubuntu', 'GTK_MODULES': 'gail:atk-bridge', 'MANAGERPID': '2484', 'SYSTEMD_EXEC_PID': '2764', 'GSM_SKIP_SSH_AGENT_WORKAROUND': 'true', 'DBUS_SESSION_BUS_ADDRESS': 'unix:path=/run/user/1000/bus', 'GIO_LAUNCHED_DESKTOP_FILE_PID': '4156', 'DEBUGINFOD_URLS': 'https://debuginfod.ubuntu.com', 'IM_CONFIG_PHASE': '1', 'WAYLAND_DISPLAY': 'wayland-0', 'API_TIMEOUT_MS': '900000', 'LOGNAME': 'garai', 'ELECTRON_USE_SYSTEM_TITLE_BAR': '1', 'JOURNAL_STREAM': '9:22633', '_': '/usr/bin/colcon', 'MEMORY_PRESSURE_WATCH': '/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/session.slice/org.gnome.Shell@wayland.service/memory.pressure', 'XDG_SESSION_CLASS': 'user', 'USERNAME': 'garai', 'ANTHROPIC_BASE_URL': 'https://api.anthropic.com', 'CLAUDE_CODE_ENABLE_ASK_USER_QUESTION_TOOL': 'true', 'GNOME_DESKTOP_SESSION_ID': 'this-is-deprecated', 'FC_FONTATIONS': '1', 'MCP_CONNECTION_NONBLOCKING': 'true', 'PATH': '/home/garai/.local/bin:/opt/ros/jazzy/opt/gz_msgs_vendor/bin:/opt/ros/jazzy/opt/gz_tools_vendor/bin:/opt/ros/jazzy/opt/gz_ogre_next_vendor/bin:/opt/ros/jazzy/bin:/home/garai/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin:/opt/xtensa-esp-elf/bin/:/opt/xtensa-esp-elf/bin/:/home/garai/.config/Claude/local-agent-mode-sessions/skills-plugin/a89eef8e-3d76-4109-90eb-902d6890bf4d/87b43ece-8f5c-473e-8050-57dae7519d5b/bin', 'SESSION_MANAGER': 'local/garai:@/tmp/.ICE-unix/2713,unix/garai:/tmp/.ICE-unix/2713', 'ANTHROPIC_API_KEY': '', 'INVOCATION_ID': 'dcf53d20232c4984ab3a0b42621b186d', 'COREPACK_ENABLE_AUTO_PIN': '0', 'XDG_MENU_PREFIX': 'gnome-', 'GNOME_SETUP_DISPLAY': ':1', 'XDG_RUNTIME_DIR': '/run/user/1000', 'GDK_BACKEND': 'x11', 'CLAUDE_CODE_PROVIDER_MANAGED_BY_HOST': '1', 'DISPLAY': ':0', 'NoDefaultCurrentDirectoryInExePath': '1', 'LANG': 'en_US.UTF-8', 'XDG_CURRENT_DESKTOP': 'ubuntu:GNOME', 'XMODIFIERS': '@im=ibus', 'XDG_SESSION_DESKTOP': 'ubuntu', 'XAUTHORITY': '/run/user/1000/.mutter-Xwaylandauth.E7B7Q3', 'SSH_AUTH_SOCK': '/run/user/1000/keyring/ssh', 'SHELL': '/bin/bash', 'QT_ACCESSIBILITY': '1', 'GDMSESSION': 'ubuntu', 'CLAUDE_CODE_EMIT_TOOL_USE_SUMMARIES': 'false', 'CLAUDE_CODE_DISABLE_CRON': '', 'NODE_USE_SYSTEM_CA': '1', 'CLAUDECODE': '1', 'CLAUDE_CODE_SDK_HAS_OAUTH_REFRESH': '1', 'GJS_DEBUG_OUTPUT': 'stderr', 'QT_IM_MODULE': 'ibus', 'PWD': '/home/garai/Desktop/alerion_sim/build/alerion_sim', 'DISABLE_AUTOUPDATER': '1', 'XDG_CONFIG_DIRS': '/etc/xdg/xdg-ubuntu:/etc/xdg', 'ELECTRON_FORCE_IS_PACKAGED': 'true', 'XDG_DATA_DIRS': '/usr/share/ubuntu:/usr/share/gnome:/usr/local/share/:/usr/share/:/var/lib/snapd/desktop', 'CLAUDE_CODE_EXECPATH': '/home/garai/.config/Claude/claude-code/2.1.128/claude', 'COLCON': '1', 'MEMORY_PRESSURE_WRITE': 'c29tZSAyMDAwMDAgMjAwMDAwMAA='}), 'shell': False}
+[0.051498] (alerion_sim) StdoutLine: {'line': b'-- Found ament_cmake: 2.5.6 (/opt/ros/jazzy/share/ament_cmake/cmake)\n'}
+[0.099881] (-) TimerEvent: {}
+[0.200016] (-) TimerEvent: {}
+[0.300147] (-) TimerEvent: {}
+[0.400320] (-) TimerEvent: {}
+[0.500455] (-) TimerEvent: {}
+[0.600584] (-) TimerEvent: {}
+[0.700716] (-) TimerEvent: {}
+[0.800862] (-) TimerEvent: {}
+[0.901021] (-) TimerEvent: {}
+[1.001214] (-) TimerEvent: {}
+[1.101373] (-) TimerEvent: {}
+[1.201510] (-) TimerEvent: {}
+[1.301639] (-) TimerEvent: {}
+[1.401778] (-) TimerEvent: {}
+[1.501934] (-) TimerEvent: {}
+[1.602074] (-) TimerEvent: {}
+[1.702199] (-) TimerEvent: {}
+[1.802324] (-) TimerEvent: {}
+[1.902452] (-) TimerEvent: {}
+[2.002579] (-) TimerEvent: {}
+[2.019268] (alerion_sim) StderrLine: {'line': b'Traceback (most recent call last):\n'}
+[2.019468] (alerion_sim) StderrLine: {'line': b'  File "/opt/ros/jazzy/share/ament_cmake_core/cmake/package_templates/templates_2_cmake.py", line 21, in <module>\n'}
+[2.019592] (alerion_sim) StderrLine: {'line': b'    from ament_package.templates import get_environment_hook_template_path\n'}
+[2.019700] (alerion_sim) StderrLine: {'line': b"ModuleNotFoundError: No module named 'ament_package'\n"}
+[2.049781] (alerion_sim) StderrLine: {'line': b'CMake Error at /opt/ros/jazzy/share/ament_cmake_core/cmake/ament_cmake_package_templates-extras.cmake:41 (message):\n'}
+[2.049919] (alerion_sim) StderrLine: {'line': b'  execute_process(/usr/bin/python3\n'}
+[2.049994] (alerion_sim) StderrLine: {'line': b'  /opt/ros/jazzy/share/ament_cmake_core/cmake/package_templates/templates_2_cmake.py\n'}
+[2.050063] (alerion_sim) StderrLine: {'line': b'  /home/garai/Desktop/alerion_sim/build/alerion_sim/ament_cmake_package_templates/templates.cmake)\n'}
+[2.050130] (alerion_sim) StderrLine: {'line': b'  returned error code 1\n'}
+[2.050196] (alerion_sim) StderrLine: {'line': b'Call Stack (most recent call first):\n'}
+[2.050274] (alerion_sim) StderrLine: {'line': b'  /opt/ros/jazzy/share/ament_cmake_core/cmake/ament_cmake_coreConfig.cmake:41 (include)\n'}
+[2.050340] (alerion_sim) StderrLine: {'line': b'  /opt/ros/jazzy/share/ament_cmake/cmake/ament_cmake_export_dependencies-extras.cmake:15 (find_package)\n'}
+[2.050405] (alerion_sim) StderrLine: {'line': b'  /opt/ros/jazzy/share/ament_cmake/cmake/ament_cmakeConfig.cmake:41 (include)\n'}
+[2.050468] (alerion_sim) StderrLine: {'line': b'  CMakeLists.txt:4 (find_package)\n'}
+[2.050588] (alerion_sim) StderrLine: {'line': b'\n'}
+[2.050657] (alerion_sim) StderrLine: {'line': b'\n'}
+[2.050723] (alerion_sim) StdoutLine: {'line': b'-- Configuring incomplete, errors occurred!\n'}
+[2.054348] (alerion_sim) CommandEnded: {'returncode': 1}
+[2.069405] (alerion_sim) JobEnded: {'identifier': 'alerion_sim', 'rc': 1}
+[2.079799] (-) EventReactorShutdown: {}

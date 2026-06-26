@@ -131,7 +131,7 @@ class ValidationNode(Node):
         self.declare_parameter("model_name", "x500_0")
         self.declare_parameter("world_name", "inspection")
         self.declare_parameter("compute_csv", "/alerion_sim/logs/alerion_compute.csv")
-        self.declare_parameter("status_interval", 5.0)
+        self.declare_parameter("status_interval", 10.0)
         self.declare_parameter("cpu_sample_hz", 0.2)  # 0.2 Hz = every 5 s
         self.declare_parameter(
             "target_processes",
@@ -145,7 +145,19 @@ class ValidationNode(Node):
                 "validation_node",
             ],
         )
-
+        self.declare_parameter(
+            "expected_topics",
+            [
+                "/clock",
+                "/model/x500_0/odometry",
+                "/model/x500_0/command/gimbal_pitch",
+                "/model/x500_0/command/gimbal_roll",
+                "/camera/image_raw",
+                "/camera/image_raw/camera_info",
+                "/lidar",
+                "/lidar/points",
+            ],
+        )
         g = self.get_parameter
         self._model = g("model_name").value
         self._world = g("world_name").value
@@ -153,6 +165,7 @@ class ValidationNode(Node):
         self._status_dt = g("status_interval").value
         cpu_hz = g("cpu_sample_hz").value
         patterns = list(g("target_processes").value)
+        self._expected_topics: list[str] = list(g("expected_topics").value)
 
         # RTF from Gazebo world stats
         self._last_rtf = 1.0
@@ -174,6 +187,9 @@ class ValidationNode(Node):
         self._t0 = time.monotonic()
         self._odom_n = 0
         self._origin: tuple[float, float, float] | None = None  # first odom sample
+
+        # topic health tracking: topic -> True = UP, False = DOWN
+        self._topic_status: dict[str, bool] = {t: False for t in self._expected_topics}
 
         # compute sampler
         self._sampler = ComputeSampler(patterns) if psutil else None
@@ -278,23 +294,55 @@ class ValidationNode(Node):
         with self._rtf_lock:
             rtf = self._last_rtf
 
+        # Refresh topic health and log any transitions
+        for topic in self._expected_topics:
+            up = self.count_publishers(topic) > 0
+            was_up = self._topic_status[topic]
+            if up != was_up:
+                self._topic_status[topic] = up
+                if up:
+                    self.get_logger().info(f"Topic UP   : {topic}")
+                else:
+                    self.get_logger().warn(f"Topic DOWN : {topic}")
+
+        down_topics = [t for t, ok in self._topic_status.items() if not ok]
+        n_up = len(self._topic_status) - len(down_topics)
+
+        sep = "-" * 52
+        lines = [
+            sep,
+            f"  t={elapsed:.0f}s   RTF={rtf:.2f}",
+            sep,
+        ]
+
         if snap:
             pp = snap["per_proc"]
 
-            def _fmt(key: str) -> str:
+            def _row(label: str, key: str) -> str:
                 cpu, mem = pp.get(key, (0.0, 0.0))
-                return f"{cpu:5.1f}%  {mem:6.0f}MB"
+                return f"  {label:<8}  cpu={cpu:5.1f}%   mem={mem:6.0f} MB"
 
-            print(
-                f"[{elapsed:7.1f}s]  RTF={rtf:.2f}\n"
-                f"  SYS   cpu={snap['sys_cpu_pct']:5.1f}%  mem={snap['sys_mem_mb']:6.0f}MB\n"
-                f"  gz    cpu={_fmt('gz sim')}\n"
-                f"  px4   cpu={_fmt('px4')}\n"
-                f"  xrce  cpu={_fmt('MicroXRCEAgent')}\n"
-                f"  bridg cpu={_fmt('parameter_bridge')}\n"
-            )
+            lines += [
+                f"  {'SYSTEM':<8}  cpu={snap['sys_cpu_pct']:5.1f}%   mem={snap['sys_mem_mb']:6.0f} MB",
+                _row("gz sim",  "gz sim"),
+                _row("px4",     "px4"),
+                _row("xrce",    "MicroXRCEAgent"),
+                _row("bridge",  "parameter_bridge"),
+                _row("gimbal",  "gimbal_controller"),
+            ]
         else:
-            print(f"[{elapsed:7.1f}s]  RTF={rtf:.2f}  (no compute data)")
+            lines.append("  (compute data unavailable — psutil not installed)")
+
+        lines.append(sep)
+        if down_topics:
+            lines.append(f"  TOPICS  {n_up}/{len(self._topic_status)} UP   DOWN:")
+            for t in down_topics:
+                lines.append(f"    ✗  {t}")
+        else:
+            lines.append(f"  TOPICS  {n_up}/{len(self._topic_status)} UP   all OK")
+        lines.append(sep)
+
+        print("\n".join(lines), flush=True)
 
     # -----------------------------------------------------------------------
     # Final report
@@ -304,10 +352,26 @@ class ValidationNode(Node):
         elapsed = time.monotonic() - self._t0
         sep = "=" * 76
 
-        print(f"\n{sep}\n  VALIDATION REPORT  {time.strftime('%Y-%m-%d %H:%M:%S')}\n{sep}")
-        print(f"  Duration      : {elapsed:.1f} s")
-        print(f"  Compute CSV   : {self._compute_csv_path}")
-        print(sep + "\n")
+        up_topics = [t for t, ok in self._topic_status.items() if ok]
+        down_topics = [t for t, ok in self._topic_status.items() if not ok]
+
+        lines = [
+            "",
+            sep,
+            f"  VALIDATION REPORT  {time.strftime('%Y-%m-%d %H:%M:%S')}",
+            sep,
+            f"  Duration      : {elapsed:.1f} s",
+            f"  Compute CSV   : {self._compute_csv_path}",
+            f"  Topics UP     : {len(up_topics)}/{len(self._topic_status)}",
+        ]
+        if down_topics:
+            for t in down_topics:
+                lines.append(f"    MISSING: {t}")
+        else:
+            lines.append("  All expected topics were active.")
+        lines += [sep, ""]
+
+        print("\n".join(lines), flush=True)
 
         try:
             self._cmp_fh.flush()

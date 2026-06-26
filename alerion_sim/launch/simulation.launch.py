@@ -138,6 +138,7 @@ def launch_setup(context: Any, *args: Any, **kwargs: Any) -> list[Any]:
 
     lidar_cfg = sens.get("lidar", {})
     camera_cfg = sens.get("camera", {})
+    cam_full_cfg = cfg.get("camera", {})  # full camera/gimbal params (camera.yaml + level overrides)
 
     # 1 render del mundo
 
@@ -391,7 +392,6 @@ def launch_setup(context: Any, *args: Any, **kwargs: Any) -> list[Any]:
 
     # Brown-Conrady distortion post-processor, publishes /camera/image_distorted alongside the clean /camera/image_raw
 
-    cam_full_cfg = cfg.get("camera", {})
     _dist_ok = (
         px4.get("start_px4", True)
         and camera_cfg.get("enabled", False)
@@ -443,7 +443,7 @@ def launch_setup(context: Any, *args: Any, **kwargs: Any) -> list[Any]:
     # Gimbal controller
 
     if px4.get("start_px4", True) and camera_cfg.get("enabled", False):
-        gimbal_cfg = camera_cfg.get("gimbal", {})
+        gimbal_cfg = cam_full_cfg.get("gimbal", {})
         actions.append(
             ExecuteProcess(
                 cmd=[

@@ -1,0 +1,20 @@
+[0.007s] Invoking command in '/home/garai/Desktop/alerion_sim/build/alerion_sim': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/garai/Desktop/alerion_sim/alerion_sim -DCMAKE_INSTALL_PREFIX=/home/garai/Desktop/alerion_sim/install/alerion_sim
+[0.051s] -- Found ament_cmake: 2.5.6 (/opt/ros/jazzy/share/ament_cmake/cmake)
+[2.019s] Traceback (most recent call last):
+[2.019s]   File "/opt/ros/jazzy/share/ament_cmake_core/cmake/package_templates/templates_2_cmake.py", line 21, in <module>
+[2.019s]     from ament_package.templates import get_environment_hook_template_path
+[2.019s] ModuleNotFoundError: No module named 'ament_package'
+[2.049s] CMake Error at /opt/ros/jazzy/share/ament_cmake_core/cmake/ament_cmake_package_templates-extras.cmake:41 (message):
+[2.049s]   execute_process(/usr/bin/python3
+[2.050s]   /opt/ros/jazzy/share/ament_cmake_core/cmake/package_templates/templates_2_cmake.py
+[2.050s]   /home/garai/Desktop/alerion_sim/build/alerion_sim/ament_cmake_package_templates/templates.cmake)
+[2.050s]   returned error code 1
+[2.050s] Call Stack (most recent call first):
+[2.050s]   /opt/ros/jazzy/share/ament_cmake_core/cmake/ament_cmake_coreConfig.cmake:41 (include)
+[2.050s]   /opt/ros/jazzy/share/ament_cmake/cmake/ament_cmake_export_dependencies-extras.cmake:15 (find_package)
+[2.050s]   /opt/ros/jazzy/share/ament_cmake/cmake/ament_cmakeConfig.cmake:41 (include)
+[2.050s]   CMakeLists.txt:4 (find_package)
+[2.050s] 
+[2.050s] 
+[2.050s] -- Configuring incomplete, errors occurred!
+[2.054s] Invoked command in '/home/garai/Desktop/alerion_sim/build/alerion_sim' returned '1': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/garai/Desktop/alerion_sim/alerion_sim -DCMAKE_INSTALL_PREFIX=/home/garai/Desktop/alerion_sim/install/alerion_sim
