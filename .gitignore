@@ -1,0 +1,20 @@
+# Validation CSV logs
+alerion_sim/logs/
+
+# ROS 2 / colcon build artifacts
+build/
+install/
+log/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store

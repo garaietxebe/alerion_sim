@@ -249,13 +249,22 @@ class ValidationNode(Node):
     # -----------------------------------------------------------------------
 
     def _sample_compute(self) -> None:
-        if self._origin is None:
-            return  # wait until the drone is visible
-
         snap = self._sampler.sample() if self._sampler else None
         self._last_snap = snap  # cache so _print_status doesn't call sample() again
 
-        rtf = self._last_rtf  # use RTF computed at last status print
+        # Compute RTF independently from _print_status so every CSV row has a
+        # current value rather than the one computed up to 10 s ago.
+        wall_now = time.monotonic()
+        with self._clock_lock:
+            sim_now = self._sim_time
+
+        if sim_now is not None and self._csv_prev_sim is not None:
+            sim_dt = sim_now - self._csv_prev_sim
+            wall_dt = wall_now - self._csv_prev_wall  # type: ignore[operator]
+            if wall_dt > 0:
+                self._csv_rtf = sim_dt / wall_dt
+        self._csv_prev_sim = sim_now
+        self._csv_prev_wall = wall_now
 
         def _cpu(key: str) -> float:
             return snap["per_proc"].get(key, (0.0, 0.0))[0] if snap else 0.0
@@ -265,7 +274,7 @@ class ValidationNode(Node):
 
         self._cmp_csv.writerow(
             [
-                f"{rtf:.3f}",
+                f"{self._csv_rtf:.3f}",
                 f"{snap['sys_cpu_pct']:.1f}" if snap else "",
                 f"{snap['sys_mem_mb']:.0f}" if snap else "",
                 f"{_cpu('gz sim'):.1f}",

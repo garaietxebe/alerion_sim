@@ -9,6 +9,7 @@ it can compute exactly which topics should be active for the current run.
 """
 
 import tempfile
+import time as _time
 from pathlib import Path
 from typing import Any
 
@@ -21,6 +22,13 @@ _LAUNCH_DIR = Path(__file__).resolve().parent
 _PROJECT_DIR = _LAUNCH_DIR.parent
 _CONFIG_DIR = _PROJECT_DIR / "config"
 _PARAM_FILE = str(_CONFIG_DIR / "validation.yaml")
+
+# Default CSV path: timestamped file inside the project logs/ directory.
+# In Docker this resolves to /alerion_sim/logs/ (the mounted project volume),
+# so the file is visible on the host after the container exits.
+# On a bare-metal run it resolves to <project>/logs/ inside the workspace.
+_LOG_DIR = _PROJECT_DIR / "logs"
+_DEFAULT_CSV = str(_LOG_DIR / f"alerion_compute_{_time.strftime('%Y%m%d_%H%M%S')}.csv")
 
 # Re-use the same config loader as simulation.launch.py.
 # importlib is needed because the filename contains dots (simulation.launch.py)
@@ -147,8 +155,12 @@ def generate_launch_description() -> LaunchDescription:
             ),
             DeclareLaunchArgument(
                 "compute_csv",
-                default_value="/tmp/alerion_compute.csv",
-                description="Output CSV path for compute load data",
+                default_value=_DEFAULT_CSV,
+                description=(
+                    "Output CSV path for compute load data. "
+                    "Defaults to logs/alerion_compute_<timestamp>.csv inside the project directory "
+                    "(accessible on the host even when running inside Docker)."
+                ),
             ),
             OpaqueFunction(function=_launch_setup),
         ]
