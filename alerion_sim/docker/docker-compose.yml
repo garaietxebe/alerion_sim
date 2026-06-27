@@ -1,23 +1,18 @@
-# Usage
-#   Full fidelity simulation (default)
+# Run all commands from this directory (alerion_sim/docker/).
+#
+# AMD (default) — override.yml is auto-loaded, no -f needed:
 #   docker compose run --rm sim level:=full
-#
-#   Development level with vision sensor profile
 #   docker compose run --rm sim level:=development sensor_profile:=vision
-#
-#   Hard-vision profile (1280x720 + distortion + realistic gimbal)
 #   docker compose run --rm sim level:=development sensor_profile:=hard_vision
-#
-#   Validation and compute load monitoring (run while sim is active)
-#   docker compose run --rm validate
-#
-#   QGroundControl (run while sim is active, connects via MAVLink UDP 14550)
+#   docker compose run --rm validate level:=full
 #   docker compose run --rm qgc
-#
-#   Interactive shell with the same environment
 #   docker compose run --rm shell
 #
-# For GUI services (full / development / qgc) on Linux X11, run once before launching:
+# NVIDIA — pass both files explicitly (-f suppresses auto-loading of override.yml):
+#   docker compose -f docker-compose.yml -f docker-compose.nvidia.yml run --rm sim level:=full
+#   docker compose -f docker-compose.yml -f docker-compose.nvidia.yml run --rm qgc
+#
+# For GUI services (sim / qgc) on Linux X11, run once before launching:
 #   xhost +local:docker
 #
 
@@ -48,21 +43,7 @@ services:
       - SYS_PTRACE
     environment:
       <<: *default-env
-      # DRI_PRIME=1 selects the discrete AMD GPU; without it Gazebo may use llvmpipe
-      DRI_PRIME: 1
     volumes: *default-volumes
-    # AMD GPU passthrough; without this Gazebo falls back to software rendering (llvmpipe) at ~12% RTF
-    devices:
-      - /dev/dri:/dev/dri
-    group_add:
-      - "44"    # video
-      - "992"   # render
-
-    deploy:
-      resources:
-        limits:
-          cpus: "4"
-          memory: "8G"
 
   # QGroundControl: connects to PX4 SITL via MAVLink UDP 14550 (auto-detected on host network)
   # Runs as qgcuser (non-root) to avoid the QGC root warning.
@@ -72,15 +53,9 @@ services:
     user: qgcuser
     environment:
       <<: *default-env
-      DRI_PRIME: 1
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
       - qgc_settings:/home/qgcuser/.config/QGroundControl.org
-    devices:
-      - /dev/dri:/dev/dri
-    group_add:
-      - "44"    # video
-      - "992"   # render
     entrypoint: ["/opt/QGroundControl/AppRun"]
 
   # Validation and compute load monitoring service

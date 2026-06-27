@@ -8,13 +8,14 @@ Accepts the same level / sensor_profile arguments as simulation.launch.py so
 it can compute exactly which topics should be active for the current run.
 """
 
+import tempfile
 from pathlib import Path
 from typing import Any
 
+import yaml
 from launch import LaunchDescription  # type: ignore[attr-defined]
-from launch.actions import DeclareLaunchArgument, OpaqueFunction
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, OpaqueFunction
 from launch.substitutions import LaunchConfiguration
-from launch_ros.actions import Node
 
 _LAUNCH_DIR = Path(__file__).resolve().parent
 _PROJECT_DIR = _LAUNCH_DIR.parent
@@ -75,24 +76,40 @@ def _launch_setup(context: Any, *args: Any, **kwargs: Any) -> list[Any]:
         if nadir_cfg.get("enabled", False):
             expected_topics.append("/camera/nadir_raw")
 
+    # Write dynamic parameters (including the computed expected_topics list) to a
+    # temporary YAML file.  Using --params-file avoids command-line quoting issues
+    # with string lists and doesn't require the alerion_sim package to be installed
+    # in the container's ament index.
+    dynamic_params = {
+        "validation_node": {
+            "ros__parameters": {
+                "model_name": model_name,
+                "world_name": world_name,
+                "compute_csv": compute_csv,
+                "status_interval": float(status_interval),
+                "cpu_sample_hz": float(cpu_sample_hz),
+                "expected_topics": expected_topics,
+            }
+        }
+    }
+    tmp = tempfile.NamedTemporaryFile(
+        mode="w", suffix=".yaml", prefix="alerion_validation_", delete=False
+    )
+    yaml.dump(dynamic_params, tmp)
+    tmp.flush()
+
     return [
-        Node(
-            package="alerion_sim",
-            executable="validation_node",
-            name="validation_node",
-            parameters=[
-                _PARAM_FILE,
-                {
-                    "model_name": model_name,
-                    "world_name": world_name,
-                    "compute_csv": compute_csv,
-                    "status_interval": float(status_interval),
-                    "cpu_sample_hz": float(cpu_sample_hz),
-                    "expected_topics": expected_topics,
-                },
+        ExecuteProcess(
+            cmd=[
+                "python3",
+                str(_PROJECT_DIR / "scripts" / "validation_node.py"),
+                "--ros-args",
+                "--params-file", _PARAM_FILE,
+                "--params-file", tmp.name,
             ],
             additional_env={"PYTHONUNBUFFERED": "1"},
             output="screen",
+            name="validation_node",
         )
     ]
 
@@ -120,7 +137,7 @@ def generate_launch_description() -> LaunchDescription:
             ),
             DeclareLaunchArgument(
                 "status_interval",
-                default_value="5.0",
+                default_value="10.0",
                 description="Seconds between console status lines",
             ),
             DeclareLaunchArgument(

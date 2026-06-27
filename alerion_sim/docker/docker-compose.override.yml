@@ -1,0 +1,35 @@
+# AMD GPU overlay — auto-loaded by Docker Compose when no -f override is given.
+#
+# Adds DRI passthrough, video/render group membership, and resource limits to the
+# services that need GPU access (sim and qgc).  The base docker-compose.yml is
+# hardware-agnostic; all AMD-specific settings live here.
+#
+# DRI_PRIME is intentionally omitted: inside the container /dev/dri passthrough
+# exposes only the discrete AMD GPU, so there is no integrated GPU to skip over.
+# DRI_PRIME=1 on a single-GPU container triggers a Mesa warning and falls back
+# to index 0 anyway.  On the host, DRI_PRIME is still useful for prime offload,
+# but that is a host-level concern, not a container one.
+#
+# For NVIDIA, use docker-compose.nvidia.yml instead:
+#   docker compose -f docker-compose.yml -f docker-compose.nvidia.yml run --rm sim level:=full
+
+services:
+
+  sim:
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - "44"    # video  — adjust if `getent group video` shows a different GID
+      - "992"   # render — adjust if `getent group render` shows a different GID
+    deploy:
+      resources:
+        limits:
+          cpus: "4"
+          memory: "8G"
+
+  qgc:
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - "44"    # video
+      - "992"   # render

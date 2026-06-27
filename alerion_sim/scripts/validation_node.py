@@ -19,19 +19,12 @@ from typing import Any
 import rclpy
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
+from rosgraph_msgs.msg import Clock
 
 try:
     import psutil
 except ImportError:
     psutil = None  # type: ignore[assignment]
-
-try:
-    import gz.transport13 as gz_transport
-    from gz.msgs10.world_stats_pb2 import WorldStatistics
-
-    _HAS_GZ = True
-except ImportError:
-    _HAS_GZ = False
 
 
 # ---------------------------------------------------------------------------
@@ -130,7 +123,7 @@ class ValidationNode(Node):
         # parameters
         self.declare_parameter("model_name", "x500_0")
         self.declare_parameter("world_name", "inspection")
-        self.declare_parameter("compute_csv", "/alerion_sim/logs/alerion_compute.csv")
+        self.declare_parameter("compute_csv", "/tmp/alerion_compute.csv")
         self.declare_parameter("status_interval", 10.0)
         self.declare_parameter("cpu_sample_hz", 0.2)  # 0.2 Hz = every 5 s
         self.declare_parameter(
@@ -158,6 +151,7 @@ class ValidationNode(Node):
                 "/lidar/points",
             ],
         )
+
         g = self.get_parameter
         self._model = g("model_name").value
         self._world = g("world_name").value
@@ -167,21 +161,20 @@ class ValidationNode(Node):
         patterns = list(g("target_processes").value)
         self._expected_topics: list[str] = list(g("expected_topics").value)
 
-        # RTF from Gazebo world stats
-        self._last_rtf = 1.0
-        self._rtf_lock = threading.Lock()
-        self._gz_node = None
-        if _HAS_GZ:
-            self._gz_node = gz_transport.Node()
-            self._gz_node.subscribe(
-                WorldStatistics,
-                f"/world/{self._world}/stats",
-                self._gz_stats_cb,
-            )
-        else:
-            self.get_logger().warn(
-                "gz.transport13 not found, RTF column will read 1.0."
-            )
+        # RTF via /clock: compare sim-time delta to wall-time delta.
+        # Two independent pairs of (prev_sim, prev_wall) so the CSV sample rate
+        # and the status print rate each compute their own accurate RTF without
+        # one resetting the other's baseline.
+        self._clock_lock = threading.Lock()
+        self._sim_time: float | None = None        # latest sim time from /clock
+        # for _print_status
+        self._rtf_prev_sim: float | None = None
+        self._rtf_prev_wall: float | None = None
+        self._last_rtf: float = 0.0
+        # for _sample_compute (CSV)
+        self._csv_prev_sim: float | None = None
+        self._csv_prev_wall: float | None = None
+        self._csv_rtf: float = 0.0
 
         # telemetry state
         self._t0 = time.monotonic()
@@ -191,8 +184,13 @@ class ValidationNode(Node):
         # topic health tracking: topic -> True = UP, False = DOWN
         self._topic_status: dict[str, bool] = {t: False for t in self._expected_topics}
 
-        # compute sampler
+        # compute sampler + cached snapshot.
+        # _sample_compute (every 1/cpu_sample_hz s) is the ONLY place that calls
+        # sampler.sample().  _print_status reads _last_snap instead of calling
+        # sample() again — calling it twice within the same second gives ~0% CPU
+        # because cpu_percent(interval=None) measures usage since the previous call.
         self._sampler = ComputeSampler(patterns) if psutil else None
+        self._last_snap: dict | None = None
         if not psutil:
             self.get_logger().warn("psutil not installed, compute monitoring disabled.")
 
@@ -221,6 +219,7 @@ class ValidationNode(Node):
         # subscriptions and timers
         odom_topic = f"/model/{self._model}/odometry"
         self.create_subscription(Odometry, odom_topic, self._odom_cb, 10)
+        self.create_subscription(Clock, "/clock", self._clock_cb, 10)
         self.create_timer(1.0 / max(cpu_hz, 1e-3), self._sample_compute)
         self.create_timer(self._status_dt, self._print_status)
 
@@ -241,9 +240,9 @@ class ValidationNode(Node):
         if self._origin is None:
             self._origin = p
 
-    def _gz_stats_cb(self, msg: "WorldStatistics") -> None:
-        with self._rtf_lock:
-            self._last_rtf = msg.real_time_factor
+    def _clock_cb(self, msg: Clock) -> None:
+        with self._clock_lock:
+            self._sim_time = msg.clock.sec + msg.clock.nanosec * 1e-9
 
     # -----------------------------------------------------------------------
     # Compute sampling
@@ -252,9 +251,11 @@ class ValidationNode(Node):
     def _sample_compute(self) -> None:
         if self._origin is None:
             return  # wait until the drone is visible
+
         snap = self._sampler.sample() if self._sampler else None
-        with self._rtf_lock:
-            rtf = self._last_rtf
+        self._last_snap = snap  # cache so _print_status doesn't call sample() again
+
+        rtf = self._last_rtf  # use RTF computed at last status print
 
         def _cpu(key: str) -> float:
             return snap["per_proc"].get(key, (0.0, 0.0))[0] if snap else 0.0
@@ -289,10 +290,21 @@ class ValidationNode(Node):
             return
 
         elapsed = time.monotonic() - self._t0
-        snap = self._sampler.sample() if self._sampler else None
 
-        with self._rtf_lock:
-            rtf = self._last_rtf
+        # Compute RTF from sim-time vs wall-time delta since the last status print
+        wall_now = time.monotonic()
+        with self._clock_lock:
+            sim_now = self._sim_time
+
+        if sim_now is not None and self._rtf_prev_sim is not None:
+            sim_dt = sim_now - self._rtf_prev_sim
+            wall_dt = wall_now - self._rtf_prev_wall  # type: ignore[operator]
+            self._last_rtf = sim_dt / wall_dt if wall_dt > 0 else self._last_rtf
+        self._rtf_prev_sim = sim_now
+        self._rtf_prev_wall = wall_now
+
+        # Use the snapshot cached by _sample_compute — never call sample() here
+        snap = self._last_snap
 
         # Refresh topic health and log any transitions
         for topic in self._expected_topics:
@@ -308,10 +320,11 @@ class ValidationNode(Node):
         down_topics = [t for t, ok in self._topic_status.items() if not ok]
         n_up = len(self._topic_status) - len(down_topics)
 
+        rtf_str = f"{self._last_rtf:.2f}" if sim_now is not None else "n/a"
         sep = "-" * 52
         lines = [
             sep,
-            f"  t={elapsed:.0f}s   RTF={rtf:.2f}",
+            f"  t={elapsed:.0f}s   RTF={rtf_str}",
             sep,
         ]
 

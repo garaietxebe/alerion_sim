@@ -1,0 +1,43 @@
+# NVIDIA GPU overlay — pass explicitly alongside the base file:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.nvidia.yml run --rm sim level:=full
+#   docker compose -f docker-compose.yml -f docker-compose.nvidia.yml run --rm qgc
+#
+# Prerequisites on the host:
+#   - nvidia-container-toolkit installed and configured
+#     (https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html)
+#   - Docker daemon restarted after toolkit installation
+#
+# Verify with:  docker run --rm --gpus all nvidia/cuda:12.0-base nvidia-smi
+
+services:
+
+  sim:
+    environment:
+      NVIDIA_VISIBLE_DEVICES: all
+      # graphics — OpenGL/Vulkan rendering (Gazebo Ogre2)
+      # utility  — nvidia-smi and basic management
+      # compute  — CUDA (not required for Gazebo but harmless)
+      NVIDIA_DRIVER_CAPABILITIES: graphics,utility,compute
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+        limits:
+          cpus: "4"
+          memory: "8G"
+
+  qgc:
+    environment:
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: graphics,utility,compute
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

@@ -16,6 +16,7 @@ por un sistema de configuración YAML con deep-merge en capas.
 
 - [Inicio rápido](#inicio-rápido)
 - [QGroundControl](#qgroundcontrol)
+- [Nodo de validación](#nodo-de-validación)
 - [Niveles de fidelidad](#niveles-de-fidelidad)
 - [Arquitectura](#arquitectura)
 - [Sistema de configuración](#sistema-de-configuración)
@@ -34,28 +35,65 @@ por un sistema de configuración YAML con deep-merge en capas.
 xhost +local:docker
 
 # 2  Construir la imagen (solo la primera vez)
-cd ~/Desktop/alerion_sim/alerion_sim
-docker compose -f docker/docker-compose.yml build
+cd ~/Desktop/alerion_sim/alerion_sim/docker
+docker compose build
 
-# 3  Lanzar
-docker compose -f docker/docker-compose.yml run --rm sim level:=full
+# 3  Lanzar (AMD por defecto; para NVIDIA ver sección "Selección de GPU")
+docker compose run --rm sim level:=full
 ```
+
+> Todos los comandos `docker compose` se ejecutan desde `alerion_sim/docker/`.
+> Sin `-f` explícito, Compose carga automáticamente `docker-compose.override.yml`
+> con la configuración AMD. NVIDIA requiere `-f` explícito (ver más abajo).
 
 Otros comandos útiles:
 
 ```bash
 # Nivel development  sin ruido, sin distorsión, gimbal instantáneo
-docker compose -f docker/docker-compose.yml run --rm sim level:=development
+docker compose run --rm sim level:=development
 
 # Development con perfil de visión
-docker compose -f docker/docker-compose.yml run --rm sim \
-    level:=development sensor_profile:=vision
+docker compose run --rm sim level:=development sensor_profile:=vision
 
 # QGroundControl (en un segundo terminal mientras la sim está activa)
-docker compose -f docker/docker-compose.yml run --rm qgc
+docker compose run --rm qgc
 
 # Nodo de validación (en un segundo terminal mientras la sim está activa)
-docker compose -f docker/docker-compose.yml run --rm validate
+# Pasa el mismo level y sensor_profile que la simulación en curso
+docker compose run --rm validate level:=full
+```
+
+---
+
+## Selección de GPU
+
+El sistema soporta GPUs **AMD** (por defecto) y **NVIDIA** mediante archivos de
+overlay de Docker Compose. La configuración base (`docker-compose.yml`) es
+agnóstica al hardware; los detalles de cada GPU viven en archivos separados.
+
+Todos los comandos se ejecutan desde `alerion_sim/docker/`.
+
+| GPU | Comando |
+|---|---|
+| **AMD** (por defecto) | `docker compose run --rm sim level:=full` |
+| **NVIDIA** | `docker compose -f docker-compose.yml -f docker-compose.nvidia.yml run --rm sim level:=full` |
+
+> **Por qué AMD no necesita `-f`:**
+> Docker Compose auto-carga `docker-compose.override.yml` cuando no se pasa ningún
+> `-f` explícito. El override contiene toda la configuración AMD (`DRI_PRIME`,
+> `/dev/dri`, `group_add`). En cuanto se usa `-f`, el override deja de cargarse
+> automáticamente — por eso NVIDIA pasa los dos archivos de forma explícita y el
+> override AMD no interfiere.
+
+Los archivos de override modifican únicamente las secciones específicas de GPU:
+`environment`, `devices`, `group_add` (AMD) o `deploy.resources` (NVIDIA).
+El resto de la configuración (red, volúmenes, entrypoints) se hereda del archivo
+base.
+
+```bash
+# Ejemplo: lanzar con NVIDIA (desde alerion_sim/docker/)
+docker compose -f docker-compose.yml -f docker-compose.nvidia.yml \
+    run --rm sim level:=full
 ```
 
 ---
@@ -67,14 +105,20 @@ QGroundControl (v4.4.4) está incluido en la imagen Docker. Se ejecuta como un s
 ### Lanzar QGC
 
 ```bash
+# Desde alerion_sim/docker/
+
 # 1  Permitir acceso a la pantalla del host (necesario una sola vez por sesión X)
 xhost +local:docker
 
-# 2  En un terminal, lanzar la simulación
-docker compose -f docker/docker-compose.yml run --rm sim level:=full
+# 2  En un terminal, lanzar la simulación (AMD)
+docker compose run --rm sim level:=full
 
-# 3  En un segundo terminal, lanzar QGC
-docker compose -f docker/docker-compose.yml run --rm qgc
+# 3  En un segundo terminal, lanzar QGC (AMD)
+docker compose run --rm qgc
+
+# Con NVIDIA: pasar ambos archivos explícitamente en ambos terminales
+docker compose -f docker-compose.yml -f docker-compose.nvidia.yml run --rm sim level:=full
+docker compose -f docker-compose.yml -f docker-compose.nvidia.yml run --rm qgc
 ```
 
 QGC detecta el vehículo automáticamente al conectarse (icono verde en la barra superior). No requiere ninguna configuración de enlace adicional si la simulación se lanzó antes.
@@ -85,6 +129,87 @@ Los parámetros y misiones guardadas en QGC se persisten en el volumen Docker `q
 
 ```bash
 docker volume rm alerion_sim_qgc_settings
+```
+
+---
+
+## Nodo de validación
+
+El nodo de validación monitoriza pasivamente una sesión de vuelo en curso.
+Se ejecuta en un terminal independiente junto a la simulación y produce:
+
+- **Estado cada 10 s** — RTF, CPU y RAM por proceso, topics activos/caídos.
+- **CSV de carga computacional** — una fila por muestra con RTF, CPU y RAM de cada proceso relevante.
+- **Informe final** — resumen de topics al detener el nodo (`Ctrl+C`).
+
+### Lanzar
+
+```bash
+# Con Docker (AMD) — desde alerion_sim/docker/:
+docker compose run --rm validate level:=full
+
+# Con Docker (NVIDIA) — desde alerion_sim/docker/:
+docker compose -f docker-compose.yml -f docker-compose.nvidia.yml \
+    run --rm validate level:=full
+
+# Sin Docker:
+ros2 launch alerion_sim validation.launch.py level:=full
+```
+
+> `level` y `sensor_profile` deben coincidir con la simulación en curso.
+> El nodo los usa para calcular exactamente qué topics deben estar activos,
+> evitando falsos positivos en el chequeo de salud de topics.
+
+### Parámetros del launch file
+
+| Argumento | Por defecto | Descripción |
+|---|---|---|
+| `level` | `full` | Nivel de fidelidad de la simulación en curso (`minimal` / `development` / `full`) |
+| `sensor_profile` | `auto` | Perfil de sensores de la simulación en curso (`auto` / `navigation` / `vision` / `hard_vision`) |
+| `model_name` | `x500_0` | Nombre del modelo en Gazebo (debe coincidir con el de la sim) |
+| `world_name` | `inspection` | Nombre del mundo Gazebo |
+| `status_interval` | `10.0` | Segundos entre impresiones de estado en consola |
+| `cpu_sample_hz` | `0.2` | Frecuencia de muestreo de CPU/RAM en Hz (0.2 Hz = cada 5 s) |
+| `compute_csv` | `/tmp/alerion_compute.csv` | Ruta de salida del CSV de carga computacional |
+
+Ejemplo con parámetros no por defecto:
+
+```bash
+ros2 launch alerion_sim validation.launch.py \
+    level:=development \
+    sensor_profile:=navigation \
+    status_interval:=5.0 \
+    compute_csv:=/tmp/mi_vuelo.csv
+```
+
+### Parámetros avanzados del nodo ROS 2
+
+Configurables en `config/validation.yaml` o sobrescribibles con `--ros-args -p`:
+
+| Parámetro | Por defecto | Descripción |
+|---|---|---|
+| `target_processes` | `[gz sim, px4, MicroXRCEAgent, ...]` | Patrones de nombre de proceso a monitorizar (regex) |
+| `expected_topics` | *(calculado por el launch file)* | Lista de topics que deben estar activos; se comprueba cada `status_interval` segundos |
+
+> `expected_topics` se calcula automáticamente a partir de `level` y `sensor_profile`:
+> el nodo sólo espera los topics que los bridges y controladores activos realmente publican.
+> Sobreescribirlo manualmente sólo es necesario si el nodo se inicia fuera del launch file.
+
+### Salida de ejemplo
+
+```
+----------------------------------------------------
+  t=20s   RTF=0.97
+----------------------------------------------------
+  SYSTEM    cpu= 91.4%   mem=  7203 MB
+  gz sim    cpu= 44.2%   mem=  1318 MB
+  px4       cpu=  9.1%   mem=   304 MB
+  xrce      cpu=  3.4%   mem=    91 MB
+  bridge    cpu=  2.0%   mem=    74 MB
+  gimbal    cpu=  0.5%   mem=    46 MB
+----------------------------------------------------
+  TOPICS  8/8 UP   all OK
+----------------------------------------------------
 ```
 
 ---
@@ -316,7 +441,7 @@ Los nombres en `group_add` se resuelven dentro del contenedor. Usa GIDs numéric
 getent group video render   # muestra los GIDs en tu host
 ```
 
-Luego configúralos en `docker/docker-compose.yml`:
+Luego configúralos en `docker/docker-compose.override.yml`:
 
 ```yaml
 group_add:

@@ -195,7 +195,10 @@ def launch_setup(context: Any, *args: Any, **kwargs: Any) -> list[Any]:
     gz_plugins_dir = str(
         PX4_DIR / "build" / "px4_sitl_default" / "src" / "modules" / "simulation" / "gz_plugins"
     )
-    gz_server_cfg = str(PX4_DIR / "src" / "modules" / "simulation" / "gz_bridge" / "server.config")
+    # Use our own server.config instead of PX4's to avoid loading ABI-fragile
+    # custom plugins (OpticalFlowSystem, GstCameraSystem) that break when the
+    # runtime gz-harmonic version differs from the one used to compile PX4 SITL.
+    gz_server_cfg = str(_CONFIG_DIR / "gz_server.config")
 
     actions.append(
         SetEnvironmentVariable(
