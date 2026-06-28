@@ -1,0 +1,279 @@
+# RViz2 config — fidelity level: development
+#
+# Active topics at this level (navigation profile):
+#   /clock
+#   /model/x500_0/odometry
+#   /lidar              (LaserScan  — 2-D horizontal ring, 90 samples @ 15 Hz)
+#   /lidar/points       (PointCloud2 — 16-beam 3-D cloud, no noise)
+#   /camera/image_raw   (640×480 @ 30 Hz, no noise, no distortion)
+#   /camera/image_raw/camera_info
+#   /model/x500_0/command/gimbal_pitch
+#   /model/x500_0/command/gimbal_roll
+#
+# Profile differences:
+#   navigation  → lidar ON,  camera OFF  (remove Image displays)
+#   vision      → lidar OFF, camera ON   (remove LaserScan/PointCloud2 displays)
+#
+# Visually: sparse point cloud + 2-D scan ring + clean camera feed.
+# No noise — geometry is exact. Background is dark blue to distinguish from minimal.
+
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+    Property Tree Widget:
+      Expanded:
+        - /Grid1
+        - /LiDAR Points1
+        - /LiDAR Scan1
+        - /Odometry1
+        - /Camera1
+      Splitter Ratio: 0.5
+    Tree Height: 700
+  - Class: rviz_common/Views
+    Expanded:
+      - /Current View1
+    Name: Views
+
+Visualization Manager:
+  Class: ""
+  Displays:
+
+    - Class: rviz_default_plugins/Grid
+      Alpha: 0.4
+      Cell Size: 1
+      Color: 100; 120; 150
+      Enabled: true
+      Line Style:
+        Line Width: 0.03
+        Value: Lines
+      Name: Grid
+      Normal Cell Count: 0
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Plane: XY
+      Plane Cell Count: 20
+      Reference Frame: <Fixed Frame>
+      Value: true
+
+    - Class: rviz_default_plugins/TF
+      Enabled: true
+      Frame Timeout: 15
+      Frames:
+        All Enabled: false
+      Marker Scale: 0.4
+      Name: TF
+      Show Arrows: true
+      Show Axes: true
+      Show Names: false
+      Tree:
+        {}
+      Update Interval: 0
+      Value: true
+
+    - Alpha: 1
+      Class: rviz_default_plugins/Odometry
+      Covariance:
+        Orientation:
+          Alpha: 0.5
+          Color: 255; 255; 127
+          Color Style: Unique
+          Frame: Local
+          Offset: 1
+          Scale: 1
+          Value: true
+        Position:
+          Alpha: 0.5
+          Color: 204; 51; 204
+          Scale: 1
+          Value: true
+        Value: false
+      Enabled: true
+      Keep: 200
+      Name: Odometry
+      Position Tolerance: 0.05
+      Angle Tolerance: 0.05
+      Shape:
+        Alpha: 1
+        Color: 0; 200; 255
+        Head Length: 0.25
+        Head Radius: 0.08
+        Shaft Length: 0.5
+        Shaft Radius: 0.04
+        Value: Arrow
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Value: /model/x500_0/odometry
+      Value: true
+
+    # -----------------------------------------------------------------------
+    # LiDAR — 2-D horizontal ring (LaserScan)
+    # Shows the front-facing 90° arc at the drone's current altitude.
+    # -----------------------------------------------------------------------
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz_default_plugins/LaserScan
+      Color: 255; 140; 0
+      Color Transformer: FlatColor
+      Decay Time: 0.2
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 0
+      Min Color: 0; 0; 0
+      Min Intensity: 0
+      Name: LiDAR Scan
+      Position Transformer: XYZ
+      Selectable: true
+      Size (Pixels): 4
+      Size (m): 0.02
+      Style: Points
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Value: /lidar
+      Use Fixed Frame: true
+      Use rainbow: false
+      Value: true
+
+    # -----------------------------------------------------------------------
+    # LiDAR — 3-D point cloud (PointCloud2)
+    # 16 beams × 90 horizontal samples = 1440 points/scan.
+    # Colored by Z axis (elevation heatmap): blue=low, red=high.
+    # No noise in development — geometry is exact.
+    # -----------------------------------------------------------------------
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 5
+        Min Value: -2
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz_default_plugins/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: AxisColor
+      Decay Time: 0.1
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 4096
+      Min Color: 0; 0; 0
+      Min Intensity: 0
+      Name: LiDAR Points
+      Position Transformer: XYZ
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.04
+      Style: Flat Squares
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Value: /lidar/points
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
+
+    # -----------------------------------------------------------------------
+    # Camera — raw feed (640×480, no noise, no distortion)
+    # -----------------------------------------------------------------------
+    - Class: rviz_default_plugins/Image
+      Enabled: true
+      Max Value: 1
+      Median window: 5
+      Min Value: 0
+      Name: Camera
+      Normalize Range: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Value: /camera/image_raw
+      Value: true
+
+  Enabled: true
+  Global Options:
+    Background Color: 18; 26; 40
+    Fixed Frame: odom
+    Frame Rate: 30
+  Name: root
+  Tools:
+    - Class: rviz_default_plugins/Interact
+      Hide Inactive: false
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+    - Class: rviz_default_plugins/FocusCamera
+    - Class: rviz_default_plugins/Measure
+      Line color: 128; 128; 0
+    - Class: rviz_default_plugins/SetInitialPose
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /initialpose
+    - Class: rviz_default_plugins/PublishPoint
+      Single click: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /clicked_point
+  Value: true
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 15
+      Enable Stereo Rendering:
+        Stereo Eye Separation: 0.06
+        Stereo Focal Distance: 1
+        Swap Stereo Eyes: false
+        Value: false
+      Focal Point:
+        X: 0
+        Y: 0
+        Z: 1
+      Focal Shape Fixed Size: true
+      Focal Shape Size: 0.05
+      Invert Z Axis: false
+      Name: Current View
+      Near Clip Distance: 0.01
+      Pitch: 0.7
+      Target Frame: <Fixed Frame>
+      Value: Orbit (rviz_default_plugins)
+      Yaw: 0.785398
+    Saved: ~
+
+Window Geometry:
+  Displays:
+    collapsed: false
+  Height: 900
+  QSplitter:
+    sizes:
+      - 300
+      - 1000
+  Views:
+    collapsed: false
+  Width: 1300
+  X: 0
+  Y: 27
