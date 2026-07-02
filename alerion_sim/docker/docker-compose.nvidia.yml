@@ -41,3 +41,15 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
+
+  rviz:
+    environment:
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: graphics,utility,compute
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

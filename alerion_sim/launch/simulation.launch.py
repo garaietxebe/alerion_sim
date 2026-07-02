@@ -380,6 +380,115 @@ def launch_setup(context: Any, *args: Any, **kwargs: Any) -> list[Any]:
         )
     )
 
+    # TF broadcasting + RViz helper publishers
+    #
+    # ros_gz_bridge's gz.msgs.Pose_V → tf2_msgs/TFMessage conversion does not
+    # populate frame_id / child_frame_id in ROS 2 Jazzy + Gazebo Harmonic, so
+    # every transform arrives with empty frame names and tf2 discards them.
+    #
+    # Instead we use reliable dedicated nodes:
+    #
+    #   odom_to_tf        – reads nav_msgs/Odometry and rebroadcasts as /tf.
+    #   odom_to_path      – accumulates odometry poses into nav_msgs/Path
+    #                       published on /drone/path (flight trail in RViz).
+    #   odom_to_vel_marker– converts odometry twist into a coloured arrow
+    #                       published on /drone/velocity_marker (speed & direction).
+    #   static transforms – fixed sensor-frame offsets published on /tf_static.
+    #
+    if px4.get("start_px4", True):
+        # Dynamic: odometry → TF (parent frame → base_link / base_footprint)
+        actions.append(
+            ExecuteProcess(
+                cmd=[
+                    "python3",
+                    str(_PROJECT_DIR / "scripts" / "odom_to_tf.py"),
+                    "--ros-args",
+                    "-p", f"topic:=/model/{gz_model_name}/odometry",
+                ],
+                additional_env={"PYTHONUNBUFFERED": "1"},
+                output="screen",
+                name="odom_to_tf",
+            )
+        )
+
+        # Flight trail: odometry → nav_msgs/Path on /drone/path
+        actions.append(
+            ExecuteProcess(
+                cmd=[
+                    "python3",
+                    str(_PROJECT_DIR / "scripts" / "odom_to_path.py"),
+                    "--ros-args",
+                    "-p", f"topic:=/model/{gz_model_name}/odometry",
+                ],
+                additional_env={"PYTHONUNBUFFERED": "1"},
+                output="screen",
+                name="odom_to_path",
+            )
+        )
+
+        # Velocity arrow: odometry twist → visualization_msgs/Marker on /drone/velocity_marker
+        actions.append(
+            ExecuteProcess(
+                cmd=[
+                    "python3",
+                    str(_PROJECT_DIR / "scripts" / "odom_to_vel_marker.py"),
+                    "--ros-args",
+                    "-p", f"topic:=/model/{gz_model_name}/odometry",
+                ],
+                additional_env={"PYTHONUNBUFFERED": "1"},
+                output="screen",
+                name="odom_to_vel_marker",
+            )
+        )
+
+        # Static: lidar sensor frame relative to base_footprint.
+        # Gazebo Harmonic scopes all frame names with the model name (x500_0/…).
+        # Pose from config/sensors/lidar.yaml: x=0 y=0 z=0.08 rpy=0 0 0
+        # <gz_frame_id> in model SDF is "lidar_sensor_link" → scoped "x500_0/lidar_sensor_link"
+        if lidar_cfg.get("enabled", False):
+            lp = lidar_cfg.get("pose", {})
+            actions.append(
+                Node(
+                    package="tf2_ros",
+                    executable="static_transform_publisher",
+                    arguments=[
+                        "--x",     str(lp.get("x", 0.0)),
+                        "--y",     str(lp.get("y", 0.0)),
+                        "--z",     str(lp.get("z", 0.08)),
+                        "--roll",  str(lp.get("roll", 0.0)),
+                        "--pitch", str(lp.get("pitch", 0.0)),
+                        "--yaw",   str(lp.get("yaw", 0.0)),
+                        "--frame-id",       f"{gz_model_name}/base_footprint",
+                        "--child-frame-id", "lidar_sensor_link",
+                    ],
+                    output="screen",
+                    name="tf_lidar_static",
+                )
+            )
+
+        # Static: camera link relative to base_footprint.
+        # Pose from config/sensors/camera.yaml: x=0.10 y=0 z=0.05 rpy=0 0 0
+        if camera_cfg.get("enabled", False):
+            cp = cam_full_cfg.get("pose", camera_cfg.get("pose", {}))
+            actions.append(
+                Node(
+                    package="tf2_ros",
+                    executable="static_transform_publisher",
+                    arguments=[
+                        "--x",     str(cp.get("x", 0.10)),
+                        "--y",     str(cp.get("y", 0.0)),
+                        "--z",     str(cp.get("z", 0.05)),
+                        "--roll",  str(cp.get("roll", 0.0)),
+                        "--pitch", str(cp.get("pitch", 0.0)),
+                        "--yaw",   str(cp.get("yaw", 0.0)),
+                        "--frame-id",       f"{gz_model_name}/base_footprint",
+                        "--child-frame-id", f"{gz_model_name}/camera_link",
+                    ],
+                    output="screen",
+                    name="tf_camera_static",
+                )
+            )
+
     # Dedicated image bridge node (parameter_bridge has pixel format conversion issues with gz.msgs.Image in Gazebo Harmonic)
 
     if px4.get("start_px4", True) and camera_cfg.get("enabled", False):
@@ -499,6 +608,8 @@ def launch_setup(context: Any, *args: Any, **kwargs: Any) -> list[Any]:
                     f"update_rate:={turb_cfg.get('update_rate', 10.0)}",
                     "-p",
                     f"world_name:={turb_cfg.get('world_name', 'inspection')}",
+                    "-p",
+                    f"odom_topic:=/model/{gz_model_name}/odometry",
                 ],
                 output="screen",
                 name="wind_turbulence",

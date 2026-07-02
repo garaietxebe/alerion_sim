@@ -17,6 +17,7 @@ por un sistema de configuración YAML con deep-merge en capas.
 - [Inicio rápido](#inicio-rápido)
 - [QGroundControl](#qgroundcontrol)
 - [Nodo de validación](#nodo-de-validación)
+- [Visualización RViz](#visualización-rviz)
 - [Niveles de fidelidad](#niveles-de-fidelidad)
 - [Arquitectura](#arquitectura)
 - [Sistema de configuración](#sistema-de-configuración)
@@ -57,6 +58,9 @@ docker compose run --rm sim level:=development sensor_profile:=vision
 
 # QGroundControl (en un segundo terminal mientras la sim está activa)
 docker compose run --rm qgc
+
+# Visualización RViz (en un segundo terminal mientras la sim está activa)
+docker compose run --rm rviz level:=full
 
 # Nodo de validación (en un segundo terminal mientras la sim está activa)
 # Pasa el mismo level y sensor_profile que la simulación en curso
@@ -211,6 +215,104 @@ Configurables en `config/validation.yaml` o sobrescribibles con `--ros-args -p`:
   TOPICS  8/8 UP   all OK
 ----------------------------------------------------
 ```
+
+---
+
+## Visualización RViz
+
+RViz2 permite monitorizar la simulación en tiempo real desde el host mientras el
+contenedor Docker corre. Hay tres configuraciones precargadas — una por nivel de
+fidelidad — que activan automáticamente los displays relevantes para la combinación
+de nivel y perfil de sensores en uso.
+
+RViz corre en su propio contenedor con acceso a la GPU, igual que `sim` y `qgc`.
+No requiere ROS 2 instalado en el host.
+
+### Lanzar
+
+```bash
+# Desde alerion_sim/docker/ — en un terminal separado mientras la sim está activa
+
+# AMD (override.yml se carga automáticamente)
+docker compose run --rm rviz level:=full
+docker compose run --rm rviz level:=development
+docker compose run --rm rviz level:=minimal
+
+# NVIDIA
+docker compose -f docker-compose.yml -f docker-compose.nvidia.yml run --rm rviz level:=full
+```
+
+> `level` debe coincidir con el nivel de la simulación en curso.
+> La configuración `.rviz` se elige automáticamente según el argumento.
+
+### Diferencias visuales por nivel
+
+Cada config está diseñada para que la diferencia de fidelidad sea **inmediatamente
+visible** al cambiar de nivel.
+
+| Elemento | `minimal` | `development` | `full` |
+|---|:---:|:---:|:---:|
+| Fondo | Gris oscuro | Azul marino | Azul noche |
+| Trayectoria de vuelo (línea verde) | ✓ | ✓ | ✓ |
+| Flecha de velocidad (verde→rojo) | ✗ | ✓ | ✓ |
+| Anillo LiDAR 2-D (`/lidar`) | ✗ | ✓ naranja | ✓ naranja |
+| Nube de puntos 3-D (`/lidar/points`) | ✗ | 1 440 pts/scan · sin ruido | 2 880 pts/scan · con ruido |
+| Color de nube | — | Arcoíris por Z | Arcoíris por Z |
+| Imagen cámara raw | ✗ | ✓ 640×480 | ✓ 1 280×720 |
+| Imagen cámara distorsionada | ✗ | ✗ | ✓ (k₁=−0.45) |
+| Flecha de viento (cian) | ✗ | ✗ | ✓ |
+| Árbol TF con nombres | ✗ | ✗ | ✓ |
+
+### Elementos visuales
+
+| Display | Topic | Descripción |
+|---|---|---|
+| **Flight Path** | `/drone/path` | Línea verde continua con todas las posiciones visitadas. Se acumula durante el vuelo. Se limpia al reiniciar la simulación. |
+| **Velocity** | `/drone/velocity_marker` | Flecha publicada en el frame del dron (`x500_0/base_footprint`). Longitud proporcional a la velocidad (0.4 m por m/s). Color: verde (parado) → amarillo → rojo (≥ 5 m/s). |
+| **LiDAR Scan** | `/lidar` | Anillo 2-D naranja: los 90 rayos del arco horizontal de 90° en el plano de vuelo actual. |
+| **LiDAR Points** | `/lidar/points` | Nube 3-D con `Decay Time = 3 s`: los retornos de las últimas ~60 scans se acumulan formando un mapa del entorno. El gradiente arcoíris muestra la elevación (azul = suelo, rojo = altura máxima). |
+| **Camera Raw** | `/camera/image_raw` | Feed de la cámara con gimbal en tiempo real. |
+| **Camera Distorted** | `/camera/image_distorted` | Feed con distorsión de barril aplicada (solo nivel `full`). Comparar con Raw muestra el efecto del modelo de lente. |
+| **Wind** | `/wind/marker` | Flecha cian en la posición del dron. Longitud y dirección = vector de viento instantáneo (media + turbulencia Dryden). La flecha "respira" con las ráfagas. Solo activo en `full`. |
+| **TF** | `/tf` `/tf_static` | Árbol de transformaciones: `x500_0/odom → x500_0/base_footprint → lidar_sensor_link / x500_0/camera_link`. Muestra la orientación real del dron y la posición de cada sensor. |
+
+### Seguimiento automático del dron
+
+La vista está configurada con `Target Frame: x500_0/base_footprint`, por lo que
+el centro de la cámara orbita alrededor del dron automáticamente sin perderlo de
+vista. Se puede rotar, hacer zoom y trasladar la vista con normalidad; el centro
+vuelve a seguir al dron en el siguiente frame.
+
+Para cambiar el modo de cámara: panel **Views** → cambiar `Class` a `Orbit`
+(cámara libre) o `ThirdPersonFollower` (seguimiento automático).
+
+### Topics publicados por la simulación para RViz
+
+Además de los topics de sensores, la simulación arranca automáticamente tres nodos
+auxiliares que generan datos específicos para visualización:
+
+| Topic | Tipo | Publicado por |
+|---|---|---|
+| `/drone/path` | `nav_msgs/Path` | `odom_to_path.py` — acumula poses de odometría (máx. 3 000 puntos, distancia mínima 0.1 m) |
+| `/drone/velocity_marker` | `visualization_msgs/Marker` | `odom_to_vel_marker.py` — flecha de velocidad codificada por color |
+| `/wind/vector` | `geometry_msgs/Vector3Stamped` | `wind_turbulence.py` — vector de viento en bruto (útil para rosbag) |
+| `/wind/marker` | `visualization_msgs/Marker` | `wind_turbulence.py` — flecha de viento para RViz |
+
+### Árbol TF y Fixed Frame
+
+El Fixed Frame configurado en los tres archivos `.rviz` es `x500_0/odom`.
+La cadena de transformaciones completa es:
+
+```
+x500_0/odom  (fijo en el mundo)
+  └── x500_0/base_footprint  (posición del dron, dinámica — odom_to_tf.py)
+        ├── lidar_sensor_link  (offset fijo: z = 0.08 m — tf_static)
+        └── x500_0/camera_link  (offset fijo: x = 0.10 m, z = 0.05 m — tf_static)
+```
+
+Si RViz muestra `Fixed Frame [x500_0/odom] does not exist`, el nodo `odom_to_tf`
+aún no ha recibido el primer mensaje de odometría (el dron tarda ~6 s en spawnearse).
+Espera unos segundos y se resuelve solo.
 
 ---
 

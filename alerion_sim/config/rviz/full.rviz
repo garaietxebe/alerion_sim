@@ -1,56 +1,31 @@
-# RViz2 config — fidelity level: full
-#
-# Active topics at this level:
-#   /clock
-#   /model/x500_0/odometry
-#   /lidar              (LaserScan  — 2-D ring, 90 samples @ 20 Hz, noise stddev=0.01 m)
-#   /lidar/points       (PointCloud2 — 32-beam dense cloud @ 20 Hz, with noise)
-#   /camera/image_raw   (1280×720 @ 30 Hz, Gaussian noise added)
-#   /camera/image_raw/camera_info
-#   /camera/image_distorted  (same feed with lens distortion model applied)
-#   /model/x500_0/command/gimbal_pitch
-#   /model/x500_0/command/gimbal_roll
-#
-# Key differences vs development:
-#   - Point cloud: 32 beams (vs 16) — 2880 points/scan, visually much denser
-#   - Point cloud: gaussian range noise applied — cloud has realistic scatter
-#   - Point cloud: colored by INTENSITY field (sensor response variation)
-#   - Camera: 1280×720 (vs 640×480), Gaussian pixel noise, barrel/tangential distortion
-#   - Distorted image panel side-by-side with clean image
-#   - PBR rendering + shadows in Gazebo = richer scene geometry
-#   - Wind disturbance visible as odometry arrow jitter
-#
-# Background: deep navy to make the rainbow point cloud pop.
-
 Panels:
   - Class: rviz_common/Displays
+    Help Height: 70
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /Grid1
         - /LiDAR Points (dense + noise)1
-        - /LiDAR Scan1
-        - /Odometry1
+        - /LiDAR Points (dense + noise)1/Status1
+        - /LiDAR Points (dense + noise)1/Topic1
         - /Camera Raw1
         - /Camera Distorted1
       Splitter Ratio: 0.5
-    Tree Height: 800
+    Tree Height: 269
   - Class: rviz_common/Views
     Expanded:
       - /Current View1
     Name: Views
-
+    Splitter Ratio: 0.5
 Visualization Manager:
   Class: ""
   Displays:
-
-    - Class: rviz_default_plugins/Grid
-      Alpha: 0.35
+    - Alpha: 0.3499999940395355
       Cell Size: 1
+      Class: rviz_default_plugins/Grid
       Color: 80; 100; 140
       Enabled: true
       Line Style:
-        Line Width: 0.03
+        Line Width: 0.029999999329447746
         Value: Lines
       Name: Grid
       Normal Cell Count: 0
@@ -62,65 +37,90 @@ Visualization Manager:
       Plane Cell Count: 30
       Reference Frame: <Fixed Frame>
       Value: true
-
     - Class: rviz_default_plugins/TF
       Enabled: true
+      Filter (blacklist): ""
+      Filter (whitelist): ""
       Frame Timeout: 15
       Frames:
         All Enabled: false
-      Marker Scale: 0.4
+        lidar_sensor_link:
+          Value: true
+        x500_0/base_footprint:
+          Value: true
+        x500_0/camera_link:
+          Value: true
+        x500_0/odom:
+          Value: true
+      Marker Scale: 0.4000000059604645
       Name: TF
       Show Arrows: true
       Show Axes: true
       Show Names: true
       Tree:
-        {}
+        x500_0/odom:
+          x500_0/base_footprint:
+            lidar_sensor_link:
+              {}
+            x500_0/camera_link:
+              {}
       Update Interval: 0
       Value: true
-
     - Alpha: 1
-      Class: rviz_default_plugins/Odometry
-      Covariance:
-        Orientation:
-          Alpha: 0.5
-          Color: 255; 255; 127
-          Color Style: Unique
-          Frame: Local
-          Offset: 1
-          Scale: 1
-          Value: true
-        Position:
-          Alpha: 0.5
-          Color: 204; 51; 204
-          Scale: 1
-          Value: true
-        Value: false
+      Buffer Length: 1
+      Class: rviz_default_plugins/Path
+      Color: 0; 220; 120
       Enabled: true
-      Keep: 300
-      Name: Odometry
-      Position Tolerance: 0.03
-      Angle Tolerance: 0.03
-      Shape:
-        Alpha: 1
-        Color: 0; 220; 255
-        Head Length: 0.2
-        Head Radius: 0.07
-        Shaft Length: 0.45
-        Shaft Radius: 0.035
-        Value: Arrow
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
+      Line Style: Lines
+      Line Width: 0.029999999329447746
+      Name: Flight Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /drone/path
+      Value: true
+    - Class: rviz_default_plugins/Marker
+      Enabled: true
+      Name: Velocity
+      Namespaces:
+        velocity: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Best Effort
-        Value: /model/x500_0/odometry
+        Value: /drone/velocity_marker
       Value: true
 
-    # -----------------------------------------------------------------------
-    # LiDAR — 2-D ring (LaserScan)
-    # 20 Hz, front 90° arc. Noise stddev=0.01 m visible as fringe scatter.
-    # -----------------------------------------------------------------------
+    - Class: rviz_default_plugins/Marker
+      Enabled: true
+      Name: Wind
+      Namespaces:
+        wind: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Value: /wind/marker
+      Value: true
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -132,7 +132,7 @@ Visualization Manager:
       Class: rviz_default_plugins/LaserScan
       Color: 255; 180; 0
       Color Transformer: FlatColor
-      Decay Time: 0.15
+      Decay Time: 0.15000000596046448
       Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
@@ -143,7 +143,7 @@ Visualization Manager:
       Position Transformer: XYZ
       Selectable: true
       Size (Pixels): 4
-      Size (m): 0.02
+      Size (m): 0.019999999552965164
       Style: Points
       Topic:
         Depth: 5
@@ -155,16 +155,8 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: false
       Value: true
-
-    # -----------------------------------------------------------------------
-    # LiDAR — 3-D dense point cloud (PointCloud2)
-    # 32 beams × 90 horizontal samples = 2880 points/scan @ 20 Hz.
-    # Colored by INTENSITY: surface material response variation.
-    # With noise: realistic scatter visible on flat surfaces and edges.
-    # Compare with development (16 beams, no noise) to see fidelity jump.
-    # -----------------------------------------------------------------------
     - Alpha: 1
-      Autocompute Intensity Bounds: true
+      Autocompute Intensity Bounds: false
       Autocompute Value Bounds:
         Max Value: 8
         Min Value: -3
@@ -174,34 +166,28 @@ Visualization Manager:
       Class: rviz_default_plugins/PointCloud2
       Color: 255; 255; 255
       Color Transformer: Intensity
-      Decay Time: 0.08
+      Decay Time: 0.30000001192092896
       Enabled: true
       Invert Rainbow: false
       Max Color: 255; 200; 50
-      Max Intensity: 4096
+      Max Intensity: 8
       Min Color: 0; 50; 200
-      Min Intensity: 0
+      Min Intensity: -2
       Name: LiDAR Points (dense + noise)
       Position Transformer: XYZ
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.03
+      Size (m): 0.029999999329447746
       Style: Flat Squares
       Topic:
         Depth: 5
         Durability Policy: Volatile
-        Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Best Effort
         Value: /lidar/points
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
-
-    # -----------------------------------------------------------------------
-    # Camera — raw 1280×720 feed with Gaussian pixel noise
-    # Gimbal in "follow" mode with motor inertia — subtle lag visible in pans.
-    # -----------------------------------------------------------------------
     - Class: rviz_default_plugins/Image
       Enabled: true
       Max Value: 1
@@ -212,19 +198,12 @@ Visualization Manager:
       Topic:
         Depth: 5
         Durability Policy: Volatile
-        Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Best Effort
         Value: /camera/image_raw
       Value: true
-
-    # -----------------------------------------------------------------------
-    # Camera — distorted feed (barrel + tangential distortion applied)
-    # k1=-0.45 k2=0.18 p1=0.003 p2=-0.002 — visible barrel warp on edges.
-    # Only active in full level (distortion_enabled: true).
-    # -----------------------------------------------------------------------
     - Class: rviz_default_plugins/Image
-      Enabled: true
+      Enabled: false
       Max Value: 1
       Median window: 5
       Min Value: 0
@@ -233,27 +212,28 @@ Visualization Manager:
       Topic:
         Depth: 5
         Durability Policy: Volatile
-        Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Best Effort
         Value: /camera/image_distorted
-      Value: true
-
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 10; 15; 30
-    Fixed Frame: odom
+    Fixed Frame: x500_0/odom
     Frame Rate: 30
   Name: root
   Tools:
     - Class: rviz_default_plugins/Interact
-      Hide Inactive: false
+      Hide Inactive Objects: true
     - Class: rviz_default_plugins/MoveCamera
     - Class: rviz_default_plugins/Select
     - Class: rviz_default_plugins/FocusCamera
     - Class: rviz_default_plugins/Measure
       Line color: 128; 128; 0
     - Class: rviz_default_plugins/SetInitialPose
+      Covariance x: 0.25
+      Covariance y: 0.25
+      Covariance yaw: 0.06853891909122467
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -268,41 +248,46 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /clicked_point
+  Transformation:
+    Current:
+      Class: rviz_default_plugins/TF
   Value: true
   Views:
     Current:
-      Class: rviz_default_plugins/Orbit
-      Distance: 18
+      Class: rviz_default_plugins/ThirdPersonFollower
+      Distance: 7.7191162109375
       Enable Stereo Rendering:
-        Stereo Eye Separation: 0.06
+        Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0
-        Y: 0
-        Z: 1
+        X: -0.9019632339477539
+        Y: 0.04622092843055725
+        Z: 0
       Focal Shape Fixed Size: true
-      Focal Shape Size: 0.05
+      Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
-      Near Clip Distance: 0.01
-      Pitch: 0.65
-      Target Frame: <Fixed Frame>
-      Value: Orbit (rviz_default_plugins)
-      Yaw: 0.785398
+      Near Clip Distance: 0.009999999776482582
+      Pitch: 0.2947976589202881
+      Target Frame: x500_0/base_footprint
+      Value: ThirdPersonFollower (rviz_default_plugins)
+      Yaw: 3.4774091243743896
     Saved: ~
-
 Window Geometry:
+  Camera Distorted:
+    collapsed: false
+  Camera Raw:
+    collapsed: false
   Displays:
     collapsed: false
   Height: 1000
-  QSplitter:
-    sizes:
-      - 320
-      - 1100
+  Hide Left Dock: false
+  Hide Right Dock: false
+  QMainWindow State: 000000ff00000000fd0000000100000000000001870000038efc0200000004fb0000001400430061006d0065007200610020005200610077010000003d000000ee0000001600fffffffb0000002000430061006d00650072006100200044006900730074006f007200740065006400000000fe000000bb0000001600fffffffb000000100044006900730070006c006100790073010000013100000190000000c900fffffffb0000000a0056006900650077007301000002c700000104000000a400ffffff000003ff0000038e00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Views:
     collapsed: false
   Width: 1420
-  X: 0
-  Y: 27
+  X: 66
+  Y: 32

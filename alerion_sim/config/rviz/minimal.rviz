@@ -59,49 +59,42 @@ Visualization Manager:
       Update Interval: 0
       Value: true
 
-    - Alpha: 1
-      Class: rviz_default_plugins/Odometry
-      Covariance:
-        Orientation:
-          Alpha: 0.5
-          Color: 255; 255; 127
-          Color Style: Unique
-          Frame: Local
-          Offset: 1
-          Scale: 1
-          Value: true
-        Position:
-          Alpha: 0.5
-          Color: 204; 51; 204
-          Scale: 1
-          Value: true
-        Value: false
+    # -----------------------------------------------------------------------
+    # Flight trail — smooth line connecting all visited positions
+    # -----------------------------------------------------------------------
+    - Class: rviz_default_plugins/Path
+      Alpha: 1
+      Buffer Length: 1
+      Color: 0; 220; 120
       Enabled: true
-      Keep: 200
-      Name: Odometry
-      Position Tolerance: 0.05
-      Angle Tolerance: 0.05
-      Shape:
-        Alpha: 1
-        Color: 0; 200; 255
-        Head Length: 0.25
-        Head Radius: 0.08
-        Shaft Length: 0.5
-        Shaft Radius: 0.04
-        Value: Arrow
+      Head Diameter: 0.3
+      Head Length: 0.2
+      Length: 0.3
+      Line Style: Lines
+      Line Width: 0.03
+      Name: Flight Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Radius: 0.03
+      Shaft Diameter: 0.1
+      Shaft Length: 0.1
       Topic:
         Depth: 5
         Durability Policy: Volatile
         Filter size: 10
         History Policy: Keep Last
-        Reliability Policy: Best Effort
-        Value: /model/x500_0/odometry
+        Reliability Policy: Reliable
+        Value: /drone/path
       Value: true
 
   Enabled: true
   Global Options:
     Background Color: 30; 30; 30
-    Fixed Frame: odom
+    Fixed Frame: x500_0/odom
     Frame Rate: 30
   Name: root
   Tools:
@@ -147,7 +140,7 @@ Visualization Manager:
       Name: Current View
       Near Clip Distance: 0.01
       Pitch: 0.6
-      Target Frame: <Fixed Frame>
+      Target Frame: x500_0/base_footprint
       Value: Orbit (rviz_default_plugins)
       Yaw: 0.785398
     Saved: ~

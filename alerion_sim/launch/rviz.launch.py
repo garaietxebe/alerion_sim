@@ -17,10 +17,15 @@ Inside Docker (host must have RViz2 + ROS 2 sourced):
 
 Fixed frame note
 ----------------
-The default Fixed Frame is "odom".  If RViz shows a warning like
-"No transform from [odom] to [Fixed Frame]", open the Global Options
-panel in RViz and change Fixed Frame to match the frame_id published
-by /model/x500_0/odometry (check with: ros2 topic echo --once /model/x500_0/odometry).
+The Fixed Frame is "inspection" (the Gazebo world name).  The simulation
+launch file bridges Gazebo TF to ROS 2 /tf via two ros_gz_bridge nodes
+(ros_gz_world_tf + ros_gz_model_tf), so the full transform chain is:
+
+  inspection → x500_0 → x500_0/base_link → lidar_sensor_link / camera_link …
+
+If RViz still warns "No transform from [X] to [Fixed Frame]", run:
+  ros2 run tf2_tools view_frames
+to see the actual tree and adjust Fixed Frame accordingly.
 """
 
 from pathlib import Path

@@ -5,11 +5,13 @@
 #   docker compose run --rm sim level:=development sensor_profile:=vision
 #   docker compose run --rm sim level:=development sensor_profile:=hard_vision
 #   docker compose run --rm validate level:=full
+#   docker compose run --rm rviz level:=full
 #   docker compose run --rm qgc
 #   docker compose run --rm shell
 #
 # NVIDIA — pass both files explicitly (-f suppresses auto-loading of override.yml):
 #   docker compose -f docker-compose.yml -f docker-compose.nvidia.yml run --rm sim level:=full
+#   docker compose -f docker-compose.yml -f docker-compose.nvidia.yml run --rm rviz level:=full
 #   docker compose -f docker-compose.yml -f docker-compose.nvidia.yml run --rm qgc
 #
 # For GUI services (sim / qgc) on Linux X11, run once before launching:
@@ -27,11 +29,16 @@ x-env: &default-env
 x-volumes: &default-volumes
   - ..:/alerion_sim
   - /tmp/.X11-unix:/tmp/.X11-unix
-  - gz_logs:/root/.gz
 
 services:
 
   # Main simulation service: Gazebo + PX4 SITL + bridges + controllers
+  #
+  # ~/.gz is mounted as tmpfs (RAM-backed) instead of a named volume.
+  # This guarantees a clean Gazebo state on every run — accumulated shader
+  # caches, log files, and world state from previous runs cannot degrade RTF.
+  # The tmpfs is wiped automatically when the container exits; no manual
+  # cleanup is needed.  512 MB is ample for Gazebo Harmonic's shader cache.
   sim:
     build:
       context: ..
@@ -44,6 +51,8 @@ services:
     environment:
       <<: *default-env
     volumes: *default-volumes
+    tmpfs:
+      - /root/.gz:size=512m
 
   # QGroundControl: connects to PX4 SITL via MAVLink UDP 14550 (auto-detected on host network)
   # Runs as qgcuser (non-root) to avoid the QGC root warning.
@@ -74,6 +83,18 @@ services:
     && source /opt/px4_msgs_ws/install/setup.bash \
     && ros2 launch /alerion_sim/launch/validation.launch.py \"$@\"", "--"]
 
+  # RViz2 visualisation — runs on the container GPU alongside the sim.
+  # Receives topics over the host network; no PID namespace needed.
+  rviz:
+    image: alerion_sim:latest
+    network_mode: host
+    environment: *default-env
+    volumes: *default-volumes
+    entrypoint: ["/bin/bash", "-c",
+      "source /opt/ros/jazzy/setup.bash \
+    && source /opt/px4_msgs_ws/install/setup.bash \
+    && ros2 launch /alerion_sim/launch/rviz.launch.py \"$@\"", "--"]
+
   # Interactive shell
   shell:
     image: alerion_sim:latest
@@ -91,5 +112,4 @@ services:
     tty: true
 
 volumes:
-  gz_logs:
   qgc_settings:
