@@ -5,12 +5,11 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /LiDAR Points (dense + noise)1
-        - /LiDAR Points (dense + noise)1/Status1
         - /LiDAR Points (dense + noise)1/Topic1
         - /Camera Raw1
         - /Camera Distorted1
       Splitter Ratio: 0.5
-    Tree Height: 269
+    Tree Height: 278
   - Class: rviz_common/Views
     Expanded:
       - /Current View1
@@ -98,7 +97,7 @@ Visualization Manager:
       Enabled: true
       Name: Velocity
       Namespaces:
-        velocity: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -107,7 +106,6 @@ Visualization Manager:
         Reliability Policy: Best Effort
         Value: /drone/velocity_marker
       Value: true
-
     - Class: rviz_default_plugins/Marker
       Enabled: true
       Name: Wind
@@ -282,12 +280,12 @@ Window Geometry:
     collapsed: false
   Displays:
     collapsed: false
-  Height: 1000
+  Height: 1011
   Hide Left Dock: false
   Hide Right Dock: false
-  QMainWindow State: 000000ff00000000fd0000000100000000000001870000038efc0200000004fb0000001400430061006d0065007200610020005200610077010000003d000000ee0000001600fffffffb0000002000430061006d00650072006100200044006900730074006f007200740065006400000000fe000000bb0000001600fffffffb000000100044006900730070006c006100790073010000013100000190000000c900fffffffb0000000a0056006900650077007301000002c700000104000000a400ffffff000003ff0000038e00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd0000000100000000000001870000039dfc0200000004fb0000001400430061006d0065007200610020005200610077010000003b000000f20000001600fffffffb0000002000430061006d00650072006100200044006900730074006f007200740065006400000000fe000000bb0000001600fffffffb000000100044006900730070006c006100790073010000013300000197000000c700fffffffb0000000a0056006900650077007301000002d000000108000000a000ffffff000002120000039d00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Views:
     collapsed: false
-  Width: 1420
-  X: 66
+  Width: 927
+  X: 993
   Y: 32

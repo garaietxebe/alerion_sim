@@ -12,10 +12,11 @@ Also publishes two ROS 2 topics for monitoring and visualisation:
       Useful for data recording and analysis.
 
   /wind/marker  (visualization_msgs/Marker)
-      Cyan arrow in RViz showing wind direction and magnitude at the drone's
-      current position.  Length scales with speed (scale_factor m per m/s).
-      The arrow "breathes" with the Gaussian turbulence — fast oscillations
-      are Dryden turbulence, slow drift is the baseline wind.
+      Cyan arrow in RViz that follows the drone and shows the instantaneous
+      wind direction and magnitude.  Published in the odom (world-fixed) frame
+      so the arrow direction is never affected by the drone's heading or
+      attitude — it always points the way the wind is blowing in the world.
+      Length scales with speed (scale_factor m per m/s).
 """
 
 import math
@@ -73,8 +74,9 @@ class WindTurbulenceNode(Node):
         # per-axis turbulence state (zero-mean)
         self._u = [0.0, 0.0, 0.0]
 
-        # latest drone position for marker placement (world frame)
+        # drone position in the odom (world) frame — updated by odometry callback
         self._drone_pos: Point = Point(x=0.0, y=0.0, z=2.0)
+        # odom frame name, discovered from the first odometry message
         self._odom_frame: str = "x500_0/odom"
 
         # gz-transport publisher, kept alive for the lifetime of the node
@@ -86,7 +88,7 @@ class WindTurbulenceNode(Node):
         self._vec_pub = self.create_publisher(Vector3Stamped, "/wind/vector", 10)
         self._marker_pub = self.create_publisher(Marker, "/wind/marker", 10)
 
-        # subscribe to odometry to know where to draw the marker
+        # subscribe to odometry so the marker follows the drone in the world frame
         self.create_subscription(
             Odometry,
             p("odom_topic").value,
@@ -105,13 +107,19 @@ class WindTurbulenceNode(Node):
             f"(alpha={self._alpha:.4f}, beta={self._beta:.4f})\n"
             f"  Rate      : {rate:.1f} Hz\n"
             f"  Gz topic  : {gz_topic}\n"
-            f"  RViz      : /wind/marker (cyan arrow at drone position)\n"
+            f"  RViz      : /wind/marker (cyan arrow at drone position, world-frame direction)\n"
         )
 
     # ------------------------------------------------------------------
 
     def _odom_cb(self, msg: Odometry) -> None:
-        self._drone_pos = msg.pose.pose.position
+        """Track drone position in the odom (world) frame."""
+        p = msg.pose.pose.position
+        # Copy values — do not hold a reference into the message buffer.
+        self._drone_pos = Point(x=p.x, y=p.y, z=p.z)
+        # msg.header.frame_id is the odom frame ("x500_0/odom"), not the body frame.
+        # Publishing the marker in this frame means arrow direction is world-fixed
+        # and completely unaffected by the drone's heading or attitude.
         self._odom_frame = msg.header.frame_id
 
     def _dryden_step(self) -> tuple[float, float, float]:
@@ -146,7 +154,11 @@ class WindTurbulenceNode(Node):
         vec.vector.z = wz
         self._vec_pub.publish(vec)
 
-        # ── RViz marker: cyan arrow at drone position ──────────────────
+        # ── RViz marker: cyan arrow at drone position, world-frame direction ──
+        # The marker is in the odom (world-fixed) frame.  The origin is the
+        # drone's current world position, and the tip is offset by the wind
+        # vector — so the arrow follows the drone but is NEVER rotated by the
+        # drone's heading or attitude.
         if speed < 0.01:
             return
 
@@ -168,7 +180,7 @@ class WindTurbulenceNode(Node):
         m.scale.y = _HEAD_D
         m.scale.z = 0.0
         m.color = _COLOR
-        m.lifetime = Duration(sec=0, nanosec=300_000_000)   # 0.3 s auto-hide
+        m.lifetime = Duration(sec=1, nanosec=500_000_000)   # 1.5 s — covers irregular publish gaps
         self._marker_pub.publish(m)
 
 
