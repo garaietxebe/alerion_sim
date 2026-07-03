@@ -97,7 +97,7 @@ Visualization Manager:
       Enabled: true
       Name: Velocity
       Namespaces:
-        {}
+        velocity: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -156,15 +156,15 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: false
       Autocompute Value Bounds:
-        Max Value: 8
-        Min Value: -3
-        Value: true
+        Max Value: 10
+        Min Value: -5
+        Value: false
       Axis: Z
-      Channel Name: intensity
+      Channel Name: z
       Class: rviz_default_plugins/PointCloud2
       Color: 255; 255; 255
-      Color Transformer: Intensity
-      Decay Time: 0.30000001192092896
+      Color Transformer: AxisColor
+      Decay Time: 3
       Enabled: true
       Invert Rainbow: false
       Max Color: 255; 200; 50
@@ -253,7 +253,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/ThirdPersonFollower
-      Distance: 7.7191162109375
+      Distance: 35.08515548706055
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -268,10 +268,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.2947976589202881
+      Pitch: 0.5447975397109985
       Target Frame: x500_0/base_footprint
       Value: ThirdPersonFollower (rviz_default_plugins)
-      Yaw: 3.4774091243743896
+      Yaw: 3.1524205207824707
     Saved: ~
 Window Geometry:
   Camera Distorted:

@@ -53,6 +53,15 @@ services:
     volumes: *default-volumes
     tmpfs:
       - /root/.gz:size=512m
+    entrypoint: ["/bin/bash", "-c",
+      "source /opt/ros/jazzy/setup.bash \
+    && source /opt/px4_msgs_ws/install/setup.bash \
+    && cd /alerion_sim \
+    && colcon build --symlink-install --packages-select alerion_sim \
+         --cmake-args -DCMAKE_BUILD_TYPE=Release \
+         2>&1 | grep -E 'Finished|ERROR|error' \
+    && source /alerion_sim/install/setup.bash \
+    && ros2 launch /alerion_sim/launch/simulation.launch.py \"$@\"", "--"]
 
   # QGroundControl: connects to PX4 SITL via MAVLink UDP 14550 (auto-detected on host network)
   # Runs as qgcuser (non-root) to avoid the QGC root warning.

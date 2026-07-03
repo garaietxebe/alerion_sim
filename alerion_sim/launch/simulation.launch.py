@@ -386,58 +386,22 @@ def launch_setup(context: Any, *args: Any, **kwargs: Any) -> list[Any]:
     # populate frame_id / child_frame_id in ROS 2 Jazzy + Gazebo Harmonic, so
     # every transform arrives with empty frame names and tf2 discards them.
     #
-    # Instead we use reliable dedicated nodes:
+    # drone_visualizer handles all three concerns in one process:
+    #   • /tf                    — dynamic odom → base_footprint transform
+    #   • /drone/path            — cumulative flight trail (nav_msgs/Path)
+    #   • /drone/velocity_marker — speed-coloured body-frame arrow
     #
-    #   odom_to_tf        – reads nav_msgs/Odometry and rebroadcasts as /tf.
-    #   odom_to_path      – accumulates odometry poses into nav_msgs/Path
-    #                       published on /drone/path (flight trail in RViz).
-    #   odom_to_vel_marker– converts odometry twist into a coloured arrow
-    #                       published on /drone/velocity_marker (speed & direction).
-    #   static transforms – fixed sensor-frame offsets published on /tf_static.
+    # static transforms — fixed sensor-frame offsets published on /tf_static.
     #
     if px4.get("start_px4", True):
-        # Dynamic: odometry → TF (parent frame → base_link / base_footprint)
+        # TF broadcaster + flight trail + velocity arrow — one process, one subscription.
         actions.append(
-            ExecuteProcess(
-                cmd=[
-                    "python3",
-                    str(_PROJECT_DIR / "scripts" / "odom_to_tf.py"),
-                    "--ros-args",
-                    "-p", f"topic:=/model/{gz_model_name}/odometry",
-                ],
-                additional_env={"PYTHONUNBUFFERED": "1"},
+            Node(
+                package="alerion_sim",
+                executable="drone_visualizer",
+                name="drone_visualizer",
+                parameters=[{"topic": f"/model/{gz_model_name}/odometry"}],
                 output="screen",
-                name="odom_to_tf",
-            )
-        )
-
-        # Flight trail: odometry → nav_msgs/Path on /drone/path
-        actions.append(
-            ExecuteProcess(
-                cmd=[
-                    "python3",
-                    str(_PROJECT_DIR / "scripts" / "odom_to_path.py"),
-                    "--ros-args",
-                    "-p", f"topic:=/model/{gz_model_name}/odometry",
-                ],
-                additional_env={"PYTHONUNBUFFERED": "1"},
-                output="screen",
-                name="odom_to_path",
-            )
-        )
-
-        # Velocity arrow: odometry twist → visualization_msgs/Marker on /drone/velocity_marker
-        actions.append(
-            ExecuteProcess(
-                cmd=[
-                    "python3",
-                    str(_PROJECT_DIR / "scripts" / "odom_to_vel_marker.py"),
-                    "--ros-args",
-                    "-p", f"topic:=/model/{gz_model_name}/odometry",
-                ],
-                additional_env={"PYTHONUNBUFFERED": "1"},
-                output="screen",
-                name="odom_to_vel_marker",
             )
         )
 
@@ -518,24 +482,18 @@ def launch_setup(context: Any, *args: Any, **kwargs: Any) -> list[Any]:
     if _dist_ok:
         dist = cam_full_cfg.get("distortion", {})
         actions.append(
-            ExecuteProcess(
-                cmd=[
-                    "python3",
-                    str(_PROJECT_DIR / "scripts" / "camera_distortion.py"),
-                    "--ros-args",
-                    "-p",
-                    f"k1:={dist.get('k1', 0.0)}",
-                    "-p",
-                    f"k2:={dist.get('k2', 0.0)}",
-                    "-p",
-                    f"k3:={dist.get('k3', 0.0)}",
-                    "-p",
-                    f"p1:={dist.get('p1', 0.0)}",
-                    "-p",
-                    f"p2:={dist.get('p2', 0.0)}",
-                ],
-                output="screen",
+            Node(
+                package="alerion_sim",
+                executable="camera_distortion",
                 name="camera_distortion",
+                parameters=[{
+                    "k1": dist.get("k1", 0.0),
+                    "k2": dist.get("k2", 0.0),
+                    "k3": dist.get("k3", 0.0),
+                    "p1": dist.get("p1", 0.0),
+                    "p2": dist.get("p2", 0.0),
+                }],
+                output="screen",
             )
         )
 
@@ -557,30 +515,21 @@ def launch_setup(context: Any, *args: Any, **kwargs: Any) -> list[Any]:
     if px4.get("start_px4", True) and camera_cfg.get("enabled", False):
         gimbal_cfg = cam_full_cfg.get("gimbal", {})
         actions.append(
-            ExecuteProcess(
-                cmd=[
-                    "python3",
-                    str(_PROJECT_DIR / "scripts" / "gimbal_controller.py"),
-                    "--ros-args",
-                    "-p",
-                    f"model_name:={gz_model_name}",
-                    "-p",
-                    f"default_pitch:={gimbal_cfg.get('default_pitch', 0.7854)}",
-                    "-p",
-                    "stabilize:=true",
-                    "-p",
-                    "publish_rate:=50.0",
-                    "-p",
-                    f"mode:={gimbal_cfg.get('mode', 'lock')}",
-                    "-p",
-                    f"deadband:={gimbal_cfg.get('deadband', 0.0)}",
-                    "-p",
-                    f"input_filter_hz:={gimbal_cfg.get('input_filter_hz', 0.0)}",
-                    "-p",
-                    f"follow_smoothing:={gimbal_cfg.get('follow_smoothing', 0.0)}",
-                ],
-                output="screen",
+            Node(
+                package="alerion_sim",
+                executable="gimbal_controller",
                 name="gimbal_controller",
+                parameters=[{
+                    "model_name":       gz_model_name,
+                    "default_pitch":    gimbal_cfg.get("default_pitch", 0.7854),
+                    "stabilize":        True,
+                    "publish_rate":     50.0,
+                    "mode":             gimbal_cfg.get("mode", "lock"),
+                    "deadband":         gimbal_cfg.get("deadband", 0.0),
+                    "input_filter_hz":  gimbal_cfg.get("input_filter_hz", 0.0),
+                    "follow_smoothing": gimbal_cfg.get("follow_smoothing", 0.0),
+                }],
+                output="screen",
             )
         )
 
@@ -589,30 +538,21 @@ def launch_setup(context: Any, *args: Any, **kwargs: Any) -> list[Any]:
     turb_cfg = wind.get("turbulence", {})
     if wind.get("enabled", False) and turb_cfg.get("enabled", False):
         actions.append(
-            ExecuteProcess(
-                cmd=[
-                    "python3",
-                    str(_PROJECT_DIR / "scripts" / "wind_turbulence.py"),
-                    "--ros-args",
-                    "-p",
-                    f"mean_x:={wind.get('linear_velocity_x', 0.0)}",
-                    "-p",
-                    f"mean_y:={wind.get('linear_velocity_y', 0.0)}",
-                    "-p",
-                    f"mean_z:={wind.get('linear_velocity_z', 0.0)}",
-                    "-p",
-                    f"intensity:={turb_cfg.get('intensity', 0.8)}",
-                    "-p",
-                    f"correlation_time:={turb_cfg.get('correlation_time', 3.0)}",
-                    "-p",
-                    f"update_rate:={turb_cfg.get('update_rate', 10.0)}",
-                    "-p",
-                    f"world_name:={turb_cfg.get('world_name', 'inspection')}",
-                    "-p",
-                    f"odom_topic:=/model/{gz_model_name}/odometry",
-                ],
-                output="screen",
+            Node(
+                package="alerion_sim",
+                executable="wind_turbulence",
                 name="wind_turbulence",
+                parameters=[{
+                    "mean_x":           wind.get("linear_velocity_x", 0.0),
+                    "mean_y":           wind.get("linear_velocity_y", 0.0),
+                    "mean_z":           wind.get("linear_velocity_z", 0.0),
+                    "intensity":        turb_cfg.get("intensity", 0.8),
+                    "correlation_time": turb_cfg.get("correlation_time", 3.0),
+                    "update_rate":      turb_cfg.get("update_rate", 10.0),
+                    "world_name":       turb_cfg.get("world_name", "inspection"),
+                    "odom_topic":       f"/model/{gz_model_name}/odometry",
+                }],
+                output="screen",
             )
         )
 

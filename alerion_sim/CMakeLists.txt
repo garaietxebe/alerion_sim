@@ -13,11 +13,13 @@ install(DIRECTORY config  DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY models  DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY worlds  DESTINATION share/${PROJECT_NAME})
 
-# Registra scripts Python ejecutables (ros2 run / executable= en launch files)
+# Register Python nodes so they are launchable via
+#   Node(package="alerion_sim", executable="<name>", ...)
+# and runnable with `ros2 run alerion_sim <name>`.
 install(PROGRAMS
-  scripts/validation_node.py
+  scripts/drone_visualizer.py
   DESTINATION lib/${PROJECT_NAME}
-  RENAME validation_node
+  RENAME drone_visualizer
 )
 
 install(PROGRAMS
@@ -36,6 +38,12 @@ install(PROGRAMS
   scripts/camera_distortion.py
   DESTINATION lib/${PROJECT_NAME}
   RENAME camera_distortion
+)
+
+install(PROGRAMS
+  scripts/validation_node.py
+  DESTINATION lib/${PROJECT_NAME}
+  RENAME validation_node
 )
 
 ament_package()
