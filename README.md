@@ -54,7 +54,7 @@ Otros comandos útiles:
 docker compose run --rm sim level:=development
 
 # Development con perfil de visión
-docker compose run --rm sim level:=development sensor_profile:=vision
+docker compose run --rm sim level:=development profile:=vision
 
 # QGroundControl (en un segundo terminal mientras la sim está activa)
 docker compose run --rm qgc
@@ -63,7 +63,7 @@ docker compose run --rm qgc
 docker compose run --rm rviz level:=full
 
 # Nodo de validación (en un segundo terminal mientras la sim está activa)
-# Pasa el mismo level y sensor_profile que la simulación en curso
+# Pasa el mismo level y profile que la simulación en curso
 docker compose run --rm validate level:=full
 ```
 
@@ -160,7 +160,7 @@ docker compose -f docker-compose.yml -f docker-compose.nvidia.yml \
 ros2 launch alerion_sim validation.launch.py level:=full
 ```
 
-> `level` y `sensor_profile` deben coincidir con la simulación en curso.
+> `level` y `profile` deben coincidir con la simulación en curso.
 > El nodo los usa para calcular exactamente qué topics deben estar activos,
 > evitando falsos positivos en el chequeo de salud de topics.
 
@@ -169,7 +169,7 @@ ros2 launch alerion_sim validation.launch.py level:=full
 | Argumento | Por defecto | Descripción |
 |---|---|---|
 | `level` | `full` | Nivel de fidelidad de la simulación en curso (`minimal` / `development` / `full`) |
-| `sensor_profile` | `auto` | Perfil de sensores de la simulación en curso (`auto` / `navigation` / `vision` / `hard_vision`) |
+| `profile` | `auto` | Perfil de sensores de la simulación en curso (`auto` / `navigation` / `vision` / `hard_vision`) |
 | `model_name` | `x500_0` | Nombre del modelo en Gazebo (debe coincidir con el de la sim) |
 | `world_name` | `inspection` | Nombre del mundo Gazebo |
 | `status_interval` | `10.0` | Segundos entre impresiones de estado en consola |
@@ -181,7 +181,7 @@ Ejemplo con parámetros no por defecto:
 ```bash
 ros2 launch alerion_sim validation.launch.py \
     level:=development \
-    sensor_profile:=navigation \
+    profile:=navigation \
     status_interval:=5.0 \
     compute_csv:=/tmp/mi_vuelo.csv
 ```
@@ -195,7 +195,7 @@ Configurables en `config/validation.yaml` o sobrescribibles con `--ros-args -p`:
 | `target_processes` | `[gz sim, px4, MicroXRCEAgent, ...]` | Patrones de nombre de proceso a monitorizar (regex) |
 | `expected_topics` | *(calculado por el launch file)* | Lista de topics que deben estar activos; se comprueba cada `status_interval` segundos |
 
-> `expected_topics` se calcula automáticamente a partir de `level` y `sensor_profile`:
+> `expected_topics` se calcula automáticamente a partir de `level` y `profile`:
 > el nodo sólo espera los topics que los bridges y controladores activos realmente publican.
 > Sobreescribirlo manualmente sólo es necesario si el nodo se inicia fuera del launch file.
 
@@ -288,15 +288,15 @@ Para cambiar el modo de cámara: panel **Views** → cambiar `Class` a `Orbit`
 
 ### Topics publicados por la simulación para RViz
 
-Además de los topics de sensores, la simulación arranca automáticamente tres nodos
+Además de los topics de sensores, la simulación arranca automáticamente nodos
 auxiliares que generan datos específicos para visualización:
 
 | Topic | Tipo | Publicado por |
 |---|---|---|
-| `/drone/path` | `nav_msgs/Path` | `odom_to_path.py` — acumula poses de odometría (máx. 3 000 puntos, distancia mínima 0.1 m) |
-| `/drone/velocity_marker` | `visualization_msgs/Marker` | `odom_to_vel_marker.py` — flecha de velocidad codificada por color |
-| `/wind/vector` | `geometry_msgs/Vector3Stamped` | `wind_turbulence.py` — vector de viento en bruto (útil para rosbag) |
-| `/wind/marker` | `visualization_msgs/Marker` | `wind_turbulence.py` — flecha de viento para RViz |
+| `/drone/path` | `nav_msgs/Path` | `drone_visualizer` — acumula poses de odometría (máx. 3 000 puntos, distancia mínima 0.1 m) |
+| `/drone/velocity_marker` | `visualization_msgs/Marker` | `drone_visualizer` — flecha de velocidad codificada por color |
+| `/wind/vector` | `geometry_msgs/Vector3Stamped` | `wind_turbulence` — vector de viento en bruto (útil para rosbag) |
+| `/wind/marker` | `visualization_msgs/Marker` | `wind_turbulence` — flecha de viento cian para RViz |
 
 ### Árbol TF y Fixed Frame
 
@@ -305,12 +305,12 @@ La cadena de transformaciones completa es:
 
 ```
 x500_0/odom  (fijo en el mundo)
-  └── x500_0/base_footprint  (posición del dron, dinámica — odom_to_tf.py)
+  └── x500_0/base_footprint  (posición del dron, dinámica — drone_visualizer)
         ├── lidar_sensor_link  (offset fijo: z = 0.08 m — tf_static)
         └── x500_0/camera_link  (offset fijo: x = 0.10 m, z = 0.05 m — tf_static)
 ```
 
-Si RViz muestra `Fixed Frame [x500_0/odom] does not exist`, el nodo `odom_to_tf`
+Si RViz muestra `Fixed Frame [x500_0/odom] does not exist`, el nodo `drone_visualizer`
 aún no ha recibido el primer mensaje de odometría (el dron tarda ~6 s en spawnearse).
 Espera unos segundos y se resuelve solo.
 

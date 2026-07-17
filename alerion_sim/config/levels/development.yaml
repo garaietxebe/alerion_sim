@@ -2,7 +2,7 @@
 # 
 # Nodos y sistemas base para simulacion precisa, sistemas que simulan las distorsiones y el ruido desactivados 
 #   
-# Perfiles de sensores (pasar sensor_profile:=<perfil> al ejecutar el comando):
+# Perfiles de sensores (pasar profile:=<perfil> al ejecutar el comando):
 #   navigation   lidar activo, cámara desactivada   (por defecto)
 #   vision       cámara activa, lidar desactivado
 #   hard_vision  camara activa, lidar desactivado, camara con mayor resolucion y tasa de refrescado menor
@@ -17,6 +17,7 @@ physics:
 
 rendering:
   enabled: true
+  scene_enabled: true          # include warehouse, helipad and other scene objects
   headless: false
   shadows: false
   pbr: false                   # solo materiales planos - se puede cambiar al empezar a analizar corrosiones en palas

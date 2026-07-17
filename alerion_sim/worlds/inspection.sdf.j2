@@ -7,13 +7,15 @@
     physics_gravity_z     float   (0.0 minimal, -9.81 dev full)
     physics_rtf           float   (0.0 = uncapped, 1.0 = real-time)
     physics_step          float
-    rendering_enabled     bool
+    rendering_enabled     bool    — GUI viewport + renderer active (headless=false)
+    scene_enabled         bool    — scene objects included (warehouse, helipad…);
+                                    gpu_lidar requires this true to see geometry
     rendering_shadows     bool
     rendering_pbr         bool    (false=flat materials, true=metal/roughness PBR)
     wind_enabled          bool
     wind_vel_x            float
     wind_vel_y            float
-    wind_vel_z            float   
+    wind_vel_z            float
 
   Editar el yaml de inspection para hacer cambios
 #}
@@ -267,7 +269,7 @@
             <contact/>
           </surface>
         </collision>
-        {%- if rendering_enabled %}
+        {%- if scene_enabled %}
         <visual name="visual">
           <geometry>
             <plane>
@@ -957,8 +959,8 @@
       <self_collide>false</self_collide>
     </model>
 
-    <!-- assets prefabricados SOLO en dev / full -->
-    {%- if rendering_enabled %}
+    <!-- assets prefabricados SOLO cuando scene_enabled=true (dev / full) -->
+    {%- if scene_enabled %}
 
     <include>
       <uri>model://helipad</uri>
@@ -1082,7 +1084,7 @@
     </model>
     {%- endfor %}
 
-    {%- endif %}{# rendering_enabled #}
+    {%- endif %}{# scene_enabled #}
 
     <spherical_coordinates>
       <surface_model>EARTH_WGS84</surface_model>

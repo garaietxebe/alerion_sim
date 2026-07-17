@@ -25,7 +25,6 @@ Panels:
         - /Grid1
         - /LiDAR Points1
         - /LiDAR Scan1
-        - /Odometry1
         - /Camera1
       Splitter Ratio: 0.5
     Tree Height: 700

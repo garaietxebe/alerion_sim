@@ -49,7 +49,7 @@ validation_node:
     # TOPIC HEALTH  (polled every status_interval seconds alongside the status print)
     # NOTE: validation.launch.py overrides expected_topics at runtime based on
     # which sensors and bridges are actually enabled for the chosen level and
-    # sensor_profile.  The list below is only used when the node is started
+    # profile.  The list below is only used when the node is started
     # outside of the validation launch file (e.g. during manual testing).
     expected_topics:
       - '/clock'

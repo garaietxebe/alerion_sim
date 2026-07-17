@@ -14,9 +14,10 @@ physics:
 
 rendering:
   enabled: true
+  scene_enabled: true          # include warehouse, helipad and other scene objects
   headless: false
   shadows: true
-  pbr: true                    
+  pbr: true
 
 sensors:
   lidar:

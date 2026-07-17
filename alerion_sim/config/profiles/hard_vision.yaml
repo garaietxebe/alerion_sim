@@ -1,4 +1,4 @@
-# Perfil de sensores: hard_vision
+# Perfil: hard_vision
 # Cámara de máxima calidad sobre la física/renderizado del nivel development.
 # Pensado para probar algoritmos de visión con óptica realista sin pagar el
 # coste computacional completo del nivel full (sin viento, sin turbulencia,
@@ -6,7 +6,7 @@
 #
 # Uso:
 #   ros2 launch alerion_sim simulation.launch.py \
-#     level:=development sensor_profile:=hard_vision
+#     level:=development profile:=hard_vision
 #
 # Qué añade sobre development + vision:
 #   - 1280×720 @ 30 Hz  (frente a 640×480 @ 30 Hz en vision básico)

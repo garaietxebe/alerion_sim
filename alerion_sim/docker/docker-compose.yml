@@ -2,8 +2,8 @@
 #
 # AMD (default) — override.yml is auto-loaded, no -f needed:
 #   docker compose run --rm sim level:=full
-#   docker compose run --rm sim level:=development sensor_profile:=vision
-#   docker compose run --rm sim level:=development sensor_profile:=hard_vision
+#   docker compose run --rm sim level:=development profile:=vision
+#   docker compose run --rm sim level:=development profile:=hard_vision
 #   docker compose run --rm validate level:=full
 #   docker compose run --rm rviz level:=full
 #   docker compose run --rm qgc

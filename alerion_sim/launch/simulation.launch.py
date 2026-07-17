@@ -58,7 +58,7 @@ def _deep_merge(base: dict, override: dict) -> dict:
     return result
 
 
-def load_config(level: str, sensor_profile: str = "auto") -> dict:
+def load_config(level: str, profile: str = "auto") -> dict:
     """
     Config merge order (each layer overrides the previous):
       1. config/simulation.yaml
@@ -66,7 +66,7 @@ def load_config(level: str, sensor_profile: str = "auto") -> dict:
       3. config/vehicle/x500.yaml
       4. config/levels/<level>.yaml
       5. config/profiles/<profile>.yaml   (if file exists)
-      6. sensor_profile inline override   (navigation | vision | auto)
+      6. profile inline override   (navigation | vision | auto)
     """
 
     def _load(path: Path) -> dict:
@@ -87,16 +87,58 @@ def load_config(level: str, sensor_profile: str = "auto") -> dict:
         raise FileNotFoundError(f"Level config not found: {level_file}")
     cfg = _deep_merge(cfg, _load(level_file))
 
-    profile_file = _CONFIG_DIR / "profiles" / f"{sensor_profile}.yaml"
+    profile_file = _CONFIG_DIR / "profiles" / f"{profile}.yaml"
     if profile_file.exists():
         cfg = _deep_merge(cfg, _load(profile_file))
 
-    if sensor_profile == "navigation":
+    if profile == "navigation":
         cfg.setdefault("sensors", {}).setdefault("lidar", {})["enabled"] = True
         cfg.setdefault("sensors", {}).setdefault("camera", {})["enabled"] = False
-    elif sensor_profile == "vision":
+    elif profile == "vision":
         cfg.setdefault("sensors", {}).setdefault("lidar", {})["enabled"] = False
         cfg.setdefault("sensors", {}).setdefault("camera", {})["enabled"] = True
+
+    # ── Cross-validation ────────────────────────────────────────────────────
+    _rend  = cfg.get("rendering", {})
+    _sens  = cfg.get("sensors", {})
+    _scene = _rend.get("scene_enabled", True)
+    _gui   = _rend.get("enabled", True)
+
+    _lidar_on  = _sens.get("lidar",  {}).get("enabled", False)
+    _camera_on = _sens.get("camera", {}).get("enabled", False)
+    _wind      = cfg.get("wind", {})
+
+    if _lidar_on and not _gui:
+        print(
+            "\n[alerion_sim] WARNING: sensors.lidar.enabled=true but "
+            "rendering.enabled=false.\n"
+            "  gpu_lidar requires the ogre2 rendering system — launching Gazebo in\n"
+            "  server-only mode (-s) disables it entirely. The sensor will not produce data.\n"
+            "  Set rendering.enabled: true (headless: true is fine) or disable lidar.\n"
+        )
+    if _lidar_on and not _scene:
+        print(
+            "\n[alerion_sim] WARNING: sensors.lidar.enabled=true but "
+            "rendering.scene_enabled=false.\n"
+            "  gpu_lidar does raycasting against scene geometry — with no objects "
+            "loaded the sensor\n"
+            "  will only see the ground plane. "
+            "Set rendering.scene_enabled: true in the level config.\n"
+        )
+    if _camera_on and not _gui:
+        print(
+            "\n[alerion_sim] WARNING: sensors.camera.enabled=true but "
+            "rendering.enabled=false.\n"
+            "  The camera plugin requires the Gazebo renderer to be active. "
+            "No image data will be produced.\n"
+            "  Set rendering.enabled: true or disable the camera sensor.\n"
+        )
+    if _wind.get("turbulence", {}).get("enabled", False) and not _wind.get("enabled", False):
+        print(
+            "\n[alerion_sim] WARNING: wind.turbulence.enabled=true but wind.enabled=false.\n"
+            "  The turbulence node is gated by wind.enabled — turbulence will not start.\n"
+            "  Set wind.enabled: true or remove the turbulence block.\n"
+        )
 
     return cfg
 
@@ -124,9 +166,9 @@ def render_template(template_path: Path, context: dict, suffix: str = ".sdf") ->
 
 def launch_setup(context: Any, *args: Any, **kwargs: Any) -> list[Any]:
     level = LaunchConfiguration("level").perform(context)
-    sensor_profile = LaunchConfiguration("sensor_profile").perform(context)
+    profile = LaunchConfiguration("profile").perform(context)
 
-    cfg = load_config(level, sensor_profile)
+    cfg = load_config(level, profile)
     sim = cfg.get("simulation", {})
     phys = cfg.get("physics", {})
     rend = cfg.get("rendering", {})
@@ -148,8 +190,9 @@ def launch_setup(context: Any, *args: Any, **kwargs: Any) -> list[Any]:
         "physics_rtf": phys.get("real_time_factor", 1.0),
         "physics_step": phys.get("max_step_size", 0.004),
         "rendering_enabled": rend.get("enabled", True),
+        "scene_enabled":     rend.get("scene_enabled", True),
         "rendering_shadows": rend.get("shadows", True),
-        "rendering_pbr": rend.get("pbr", False),
+        "rendering_pbr":     rend.get("pbr", False),
         "wind_enabled": wind.get("enabled", False),
         "wind_vel_x": wind.get("linear_velocity_x", 0.0),
         "wind_vel_y": wind.get("linear_velocity_y", 0.0),
@@ -177,7 +220,7 @@ def launch_setup(context: Any, *args: Any, **kwargs: Any) -> list[Any]:
         )
 
     print(f"\n[alerion_sim] Level        : {level}")
-    print(f"[alerion_sim] Sensor profile: {sensor_profile}")
+    print(f"[alerion_sim] Sensor profile: {profile}")
     print(f"[alerion_sim] LiDAR active  : {lidar_cfg.get('enabled', False)}")
     print(f"[alerion_sim] Camera active : {camera_cfg.get('enabled', False)}")
     print(f"[alerion_sim] Physics       : {phys.get('enabled', True)}")
@@ -563,29 +606,35 @@ def launch_setup(context: Any, *args: Any, **kwargs: Any) -> list[Any]:
 
 
 def generate_launch_description() -> LaunchDescription:
+    _available_levels   = sorted(p.stem for p in (_CONFIG_DIR / "levels").glob("*.yaml"))
+    _available_profiles = ["auto"] + sorted(
+        p.stem for p in (_CONFIG_DIR / "profiles").glob("*.yaml")
+    )
+
     return LaunchDescription(
         [
             DeclareLaunchArgument(
                 "level",
                 default_value="full",
-                choices=["minimal", "development", "full"],
+                choices=_available_levels,
                 description=(
-                    "fidelity level:\n"
+                    "fidelity level — any YAML in config/levels/:\n"
                     "  minimal     – headless, basic sensors only\n"
                     "  development – GUI, sensors active, no noise or wind\n"
                     "  full        – GUI, noise, wind, lens distortion, realistic gimbal"
                 ),
             ),
             DeclareLaunchArgument(
-                "sensor_profile",
+                "profile",
                 default_value="auto",
-                choices=["auto", "navigation", "vision", "hard_vision"],
+                choices=_available_profiles,
                 description=(
-                    "sensor profile:\n"
-                    "  auto        – default sensor set\n"
+                    "override profile — any YAML in config/profiles/, or 'auto'.\n"
+                    "  auto        – no overrides, use level defaults\n"
                     "  navigation  – lidar on, camera off\n"
                     "  vision      – camera on, lidar off\n"
-                    "  hard_vision – 1280x720@30Hz camera + distortion + realistic gimbal, no lidar"
+                    "  hard_vision – HD camera + distortion + realistic gimbal\n"
+                    "  (profiles can override any key: sensors, physics, spawn…)"
                 ),
             ),
             OpaqueFunction(function=launch_setup),

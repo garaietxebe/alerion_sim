@@ -17,55 +17,83 @@ Inside Docker (host must have RViz2 + ROS 2 sourced):
 
 Fixed frame note
 ----------------
-The Fixed Frame is "inspection" (the Gazebo world name).  The simulation
-launch file bridges Gazebo TF to ROS 2 /tf via two ros_gz_bridge nodes
-(ros_gz_world_tf + ros_gz_model_tf), so the full transform chain is:
+The Fixed Frame in all .rviz configs is "x500_0/odom".  TF is published by
+the drone_visualizer node (part of simulation.launch.py), which reads
+nav_msgs/Odometry and rebroadcasts the pose as a /tf transform.  The full
+transform chain is:
 
-  inspection → x500_0 → x500_0/base_link → lidar_sensor_link / camera_link …
+  x500_0/odom → x500_0/base_footprint → lidar_sensor_link
+                                       → x500_0/camera_link
 
-If RViz still warns "No transform from [X] to [Fixed Frame]", run:
-  ros2 run tf2_tools view_frames
-to see the actual tree and adjust Fixed Frame accordingly.
+If RViz still warns "No transform from [X] to [Fixed Frame]", the
+drone_visualizer node hasn't received its first odometry message yet — the
+drone takes ~6 s to spawn.  Wait a moment and it resolves automatically.
+To inspect the live tree: ros2 run tf2_tools view_frames
 """
 
 from pathlib import Path
+from typing import Any
 
 from launch import LaunchDescription  # type: ignore[attr-defined]
-from launch.actions import DeclareLaunchArgument
+from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node  # type: ignore[attr-defined]
 
-_RVIZ_DIR = Path(__file__).resolve().parent.parent / "config" / "rviz"
+_CONFIG_DIR = Path(__file__).resolve().parent.parent / "config"
+_RVIZ_DIR   = _CONFIG_DIR / "rviz"
+_FALLBACK   = "minimal"
+
+# Discover available levels from the filesystem so a new config/levels/*.yaml
+# is automatically accepted without editing this file.
+_available_levels = sorted(p.stem for p in (_CONFIG_DIR / "levels").glob("*.yaml"))
+
+
+def _rviz_setup(context: Any, *args: Any, **kwargs: Any) -> list[Any]:
+    level    = LaunchConfiguration("level").perform(context)
+    rviz_cfg = _RVIZ_DIR / f"{level}.rviz"
+
+    if not rviz_cfg.exists():
+        fallback_cfg = _RVIZ_DIR / f"{_FALLBACK}.rviz"
+        if not fallback_cfg.exists():
+            raise FileNotFoundError(
+                f"\n[alerion_sim] ERROR: no RViz config for level '{level}' "
+                f"and fallback '{_FALLBACK}' is also missing.\n"
+                f"  Create at least one of:\n"
+                f"    {rviz_cfg}\n"
+                f"    {fallback_cfg}\n"
+            )
+        print(
+            f"\n[alerion_sim] WARNING: no RViz config found for level '{level}'.\n"
+            f"  Expected : {rviz_cfg}\n"
+            f"  Falling back to '{_FALLBACK}' config: {fallback_cfg}\n"
+            f"  To add a dedicated config, create config/rviz/{level}.rviz\n"
+        )
+        rviz_cfg = fallback_cfg
+
+    return [
+        Node(
+            package="rviz2",
+            executable="rviz2",
+            name="rviz2",
+            arguments=["-d", str(rviz_cfg)],
+            output="screen",
+        )
+    ]
 
 
 def generate_launch_description() -> LaunchDescription:
-    level = LaunchConfiguration("level")
-
     return LaunchDescription(
         [
             DeclareLaunchArgument(
                 "level",
                 default_value="full",
-                choices=["minimal", "development", "full"],
+                choices=_available_levels,
                 description=(
-                    "Fidelity level — must match the running simulation. "
-                    "Selects config/rviz/<level>.rviz."
+                    "Fidelity level — any YAML in config/levels/. "
+                    "Selects config/rviz/<level>.rviz "
+                    f"(falls back to '{_FALLBACK}' if missing)."
                 ),
             ),
-            DeclareLaunchArgument(
-                "model_name",
-                default_value="x500_0",
-                description="Vehicle model name (used in topic paths like /model/<name>/odometry)",
-            ),
-            Node(
-                package="rviz2",
-                executable="rviz2",
-                name="rviz2",
-                arguments=[
-                    "-d",
-                    [str(_RVIZ_DIR) + "/", level, ".rviz"],
-                ],
-                output="screen",
-            ),
+            OpaqueFunction(function=_rviz_setup),
         ]
     )

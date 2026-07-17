@@ -4,7 +4,7 @@ Passive validation launch file.
 Run alongside simulation.launch.py to monitor CPU and RAM usage per process
 and verify that all expected topics are being published.
 
-Accepts the same level / sensor_profile arguments as simulation.launch.py so
+Accepts the same level / profile arguments as simulation.launch.py so
 it can compute exactly which topics should be active for the current run.
 """
 
@@ -43,7 +43,7 @@ load_config = _sim_launch.load_config
 
 def _launch_setup(context: Any, *args: Any, **kwargs: Any) -> list[Any]:
     level = LaunchConfiguration("level").perform(context)
-    sensor_profile = LaunchConfiguration("sensor_profile").perform(context)
+    profile = LaunchConfiguration("profile").perform(context)
     model_name = LaunchConfiguration("model_name").perform(context)
     world_name = LaunchConfiguration("world_name").perform(context)
     compute_csv = LaunchConfiguration("compute_csv").perform(context)
@@ -51,7 +51,7 @@ def _launch_setup(context: Any, *args: Any, **kwargs: Any) -> list[Any]:
     cpu_sample_hz = LaunchConfiguration("cpu_sample_hz").perform(context)
 
     # Load the merged config so we know which sensors are active
-    cfg = load_config(level, sensor_profile)
+    cfg = load_config(level, profile)
     sim = cfg.get("simulation", {})
     px4 = sim.get("px4", {})
     sens = cfg.get("sensors", {})
@@ -123,19 +123,24 @@ def _launch_setup(context: Any, *args: Any, **kwargs: Any) -> list[Any]:
 
 
 def generate_launch_description() -> LaunchDescription:
+    _available_levels   = sorted(p.stem for p in (_CONFIG_DIR / "levels").glob("*.yaml"))
+    _available_profiles = ["auto"] + sorted(
+        p.stem for p in (_CONFIG_DIR / "profiles").glob("*.yaml")
+    )
+
     return LaunchDescription(
         [
             DeclareLaunchArgument(
                 "level",
                 default_value="full",
-                choices=["minimal", "development", "full"],
-                description="Fidelity level — must match the running simulation",
+                choices=_available_levels,
+                description="Fidelity level — any YAML in config/levels/",
             ),
             DeclareLaunchArgument(
-                "sensor_profile",
+                "profile",
                 default_value="auto",
-                choices=["auto", "navigation", "vision", "hard_vision"],
-                description="Sensor profile — must match the running simulation",
+                choices=_available_profiles,
+                description="Override profile — any YAML in config/profiles/, or 'auto'",
             ),
             DeclareLaunchArgument("model_name", default_value="x500_0"),
             DeclareLaunchArgument(

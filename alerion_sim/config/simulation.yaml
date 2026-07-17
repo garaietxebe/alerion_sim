@@ -3,7 +3,7 @@
 # Para cambiar de nivel:
 #   ros2 launch alerion_sim simulation.launch.py level:=development
 # Para cambiar el perfil de sensores en modo development:
-#   ros2 launch alerion_sim simulation.launch.py level:=development sensor_profile:=vision
+#   ros2 launch alerion_sim simulation.launch.py level:=development profile:=vision
 # Cualquier clave puede ser sobreescrita por el YAML del nivel en config/levels/.
 
 
