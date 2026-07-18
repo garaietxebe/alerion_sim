@@ -18,7 +18,7 @@ physics:
 
 rendering:
   enabled: false         # headless: Gazebo se lanza con -s
-  scene_enabled: false   # no scene objects (warehouse, helipad…) — gpu_lidar needs this true to see geometry
+  scene_enabled: true   # no scene objects (warehouse, helipad…) — gpu_lidar needs this true to see geometry
   headless: true         # añade flag -s a gz sim (server-only, sin GUI)
   shadows: false
   pbr: false

@@ -1,0 +1,9 @@
+# Perfil: vision
+# Cámara activa, LiDAR desactivado.
+# Uso: profile:=vision sobre cualquier nivel con GUI.
+
+sensors:
+  lidar:
+    enabled: false
+  camera:
+    enabled: true

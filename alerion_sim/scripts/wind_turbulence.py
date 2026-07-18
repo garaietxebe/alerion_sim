@@ -55,6 +55,7 @@ class WindTurbulenceNode(Node):
         self.declare_parameter("update_rate", 10.0)
         self.declare_parameter("world_name", "inspection")
         self.declare_parameter("odom_topic", "/model/x500_0/odometry")
+        self.declare_parameter("model_name", "x500_0")
 
         p = self.get_parameter
         self._mean_x = p("mean_x").value
@@ -64,6 +65,7 @@ class WindTurbulenceNode(Node):
         tau = p("correlation_time").value
         rate = p("update_rate").value
         self._world = p("world_name").value
+        model_name = p("model_name").value
 
         dt = 1.0 / rate
 
@@ -76,8 +78,10 @@ class WindTurbulenceNode(Node):
 
         # drone position in the odom (world) frame — updated by odometry callback
         self._drone_pos: Point = Point(x=0.0, y=0.0, z=2.0)
-        # odom frame name, discovered from the first odometry message
-        self._odom_frame: str = "x500_0/odom"
+        # Odom frame is derived from model_name and NEVER overwritten from
+        # msg.header.frame_id — that field can arrive as "" before the bridge
+        # is fully up, which would silently break world-frame anchoring.
+        self._odom_frame: str = f"{model_name}/odom"
 
         # gz-transport publisher, kept alive for the lifetime of the node
         gz_topic = f"/world/{self._world}/wind"
@@ -107,6 +111,7 @@ class WindTurbulenceNode(Node):
             f"(alpha={self._alpha:.4f}, beta={self._beta:.4f})\n"
             f"  Rate      : {rate:.1f} Hz\n"
             f"  Gz topic  : {gz_topic}\n"
+            f"  Odom frame: {self._odom_frame}  (world-fixed, never overwritten)\n"
             f"  RViz      : /wind/marker (cyan arrow at drone position, world-frame direction)\n"
         )
 
@@ -116,11 +121,9 @@ class WindTurbulenceNode(Node):
         """Track drone position in the odom (world) frame."""
         p = msg.pose.pose.position
         # Copy values — do not hold a reference into the message buffer.
+        # self._odom_frame is intentionally NOT updated here — it is set once
+        # at init from the model_name parameter to guarantee world-frame anchoring.
         self._drone_pos = Point(x=p.x, y=p.y, z=p.z)
-        # msg.header.frame_id is the odom frame ("x500_0/odom"), not the body frame.
-        # Publishing the marker in this frame means arrow direction is world-fixed
-        # and completely unaffected by the drone's heading or attitude.
-        self._odom_frame = msg.header.frame_id
 
     def _dryden_step(self) -> tuple[float, float, float]:
         """Advance the filter one step and return (ux, uy, uz) turbulence."""

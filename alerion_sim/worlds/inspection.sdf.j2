@@ -289,6 +289,8 @@
     </model>
 
 
+    <!-- entorno industrial SOLO cuando scene_enabled=true -->
+    {%- if scene_enabled %}
     <model name='inspection_tower'>
       <static>true</static>
       <pose>33.9490966796875 -3.1090776920318604 0 0 0 -0.10698800157240447</pose>
@@ -958,6 +960,7 @@
       </link>
       <self_collide>false</self_collide>
     </model>
+    {%- endif %}{# scene_enabled — industrial environment #}
 
     <!-- assets prefabricados SOLO cuando scene_enabled=true (dev / full) -->
     {%- if scene_enabled %}

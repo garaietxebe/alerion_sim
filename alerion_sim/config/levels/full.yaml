@@ -14,7 +14,7 @@ physics:
 
 rendering:
   enabled: true
-  scene_enabled: true          # include warehouse, helipad and other scene objects
+  scene_enabled: false          # include warehouse, helipad and other scene objects
   headless: false
   shadows: true
   pbr: true
@@ -35,17 +35,16 @@ sensors:
 
 wind:
   enabled: true
-  linear_velocity_x: 2.0      
-  linear_velocity_y: 0.5     
+  linear_velocity_x: 2.0
+  linear_velocity_y: 0.5
   linear_velocity_z: 0.0
 
-  turbulence:
-    enabled: true
-    #modelo plumb bob
-    intensity:        0.8   
-    correlation_time: 3.0   
-    update_rate:      10.0  
-    world_name:       inspection
+turbulence:
+  enabled: true
+  intensity:        0.8    # Dryden sigma (m/s per axis)
+  correlation_time: 3.0    # seconds
+  update_rate:      10.0   # Hz
+  world_name:       inspection
 
 simulation:
   px4:

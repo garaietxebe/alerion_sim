@@ -6,9 +6,22 @@
 
 
 Framework de simulación para validación de inspección autónoma con drones.
-Integra PX4 SITL, Gazebo Harmonic y ROS 2 Jazzy en un único launch parametrizado,
-con tres niveles de fidelidad y perfiles de sensores intercambiables. Gestionado
-por un sistema de configuración YAML con deep-merge en capas.
+Integra PX4 SITL, Gazebo Harmonic y ROS 2 Jazzy en un único launch parametrizado.
+
+La configuración se organiza en dos capas ortogonales:
+
+- **Nivel** (`level`) — estructura base de la simulación: motor de física, modo
+  de renderizado, sensores activos, ruido, viento. Define *qué tipo* de simulación
+  se ejecuta. Hay tres niveles predefinidos (`minimal`, `development`, `full`) y
+  añadir uno nuevo solo requiere crear un archivo YAML.
+- **Perfil** (`profile`) — superposición ligera que sobreescribe claves concretas
+  del nivel elegido. Permite ajustar *cualquier* parámetro
+  sin duplicar toda la configuración del nivel. Los perfiles se descubren
+  automáticamente; basta con añadir un `.yaml` a `config/profiles/`.
+
+Ambas capas son completamente intercambiables: cualquier perfil puede aplicarse
+sobre cualquier nivel. La configuración final se resuelve mediante un deep-merge
+en tiempo de ejecución.
 
 ---
 
@@ -168,8 +181,8 @@ ros2 launch alerion_sim validation.launch.py level:=full
 
 | Argumento | Por defecto | Descripción |
 |---|---|---|
-| `level` | `full` | Nivel de fidelidad de la simulación en curso (`minimal` / `development` / `full`) |
-| `profile` | `auto` | Perfil de sensores de la simulación en curso (`auto` / `navigation` / `vision` / `hard_vision`) |
+| `level` | `full` | Nivel de fidelidad de la simulación en curso. Opciones descubiertas automáticamente desde `config/levels/` |
+| `profile` | `auto` | Perfil aplicado a la simulación en curso. Opciones descubiertas automáticamente desde `config/profiles/` más `auto` |
 | `model_name` | `x500_0` | Nombre del modelo en Gazebo (debe coincidir con el de la sim) |
 | `world_name` | `inspection` | Nombre del mundo Gazebo |
 | `status_interval` | `10.0` | Segundos entre impresiones de estado en consola |
@@ -316,21 +329,61 @@ Espera unos segundos y se resuelve solo.
 
 ---
 
-## Niveles de fidelidad
+## Niveles y perfiles
 
-| Nivel | Física | Renderizado | Cámara | LiDAR | Viento | Ruido |
+### Niveles — estructura base
+
+Un nivel define la configuración completa de la simulación: física, renderizado,
+sensores activos, modelos de ruido, viento y turbulencia. Es el punto de partida
+sobre el que se aplican los perfiles.
+
+| Nivel | Física | Renderizado | Cámara | LiDAR | Viento / Turbulencia | Ruido |
 |---|---|---|---|---|---|---|
-| `minimal` | ODE 250 Hz | headless | ✗ | ✗ | ✗ | ✗ |
-| `development` | ODE 250 Hz | ogre2, sin sombras | 640×480 @ 30 Hz | 16 haces 15 Hz | ✗ | ✗ |
-| `full` | ODE 250 Hz | ogre2 PBR + sombras | 1280×720 @ 30 Hz | 32 haces 20 Hz | Gaussiano | ✓ |
+| `minimal` | ODE 250 Hz | headless (sin GUI) | ✗ | ✗ | ✗ | ✗ |
+| `development` | ODE 250 Hz | ogre2, sin sombras | 640×480 @ 30 Hz | 16 haces · 15 Hz | ✗ | ✗ |
+| `full` | ODE 500 Hz | ogre2 PBR + sombras | 1280×720 @ 30 Hz | 32 haces · 20 Hz | Gaussiano + Dryden | ✓ |
 
-**Perfiles de sensores** (se aplican sobre cualquier nivel):
+> Añadir un nuevo nivel es tan simple como crear `config/levels/<nombre>.yaml`.
+> El launch file lo descubre automáticamente y lo hace disponible como opción válida
+> en `level:=<nombre>`.
 
-| Perfil | Cámara | LiDAR |
-|---|---|---|
-| `navigation` *(por defecto)* | ✗ | ✓ |
-| `vision` | ✓ | ✗ |
-| `hard_vision` | 1280×720, distorsión, gimbal realista | ✗ |
+### Perfiles — ajuste fino sobre el nivel
+
+Un perfil es un archivo YAML pequeño que sobreescribe claves concretas de la
+configuración del nivel sin tocar el resto. Puede modificar cualquier sección:
+sensores, física, viento, parámetros de spawn, etc.
+
+| Perfil | Qué sobreescribe |
+|---|---|
+| `navigation` *(por defecto)* | LiDAR activo · cámara desactivada |
+| `vision` | Cámara activa · LiDAR desactivado |
+| `hard_vision` | Cámara HD 1280×720 · distorsión completa (k₁=−0.45) · gimbal realista · LiDAR desactivado |
+
+El perfil `auto` (cuando no se especifica ningún perfil) no aplica ninguna
+sobreescritura y usa el nivel tal como está.
+
+> Los perfiles se descubren automáticamente desde `config/profiles/*.yaml`.
+> Añadir un archivo nuevo lo hace disponible de inmediato sin modificar el launch file.
+> Un perfil puede contener cualquier clave — no está restringido a sensores.
+
+### Combinaciones habituales
+
+```bash
+# Base limpia — solo vuelo, sin sensores de carga
+docker compose run --rm sim level:=development
+
+# Prueba de algoritmo de navegación — LiDAR activo, sin cámara
+docker compose run --rm sim level:=development profile:=navigation
+
+# Prueba de visión — cámara activa, sin LiDAR
+docker compose run --rm sim level:=development profile:=vision
+
+# QA de visión completa — nivel full con óptica realista
+docker compose run --rm sim level:=full profile:=hard_vision
+
+# Headless para CI — sin GUI, sin sensores pesados, PX4 activo
+docker compose run --rm sim level:=minimal
+```
 
 ---
 
@@ -382,15 +435,17 @@ t = 6 s   gimbal_controller, camera_distortion, wind_turbulence  (si están acti
 
 ## Sistema de configuración
 
-El launch file resuelve la configuración final mediante un **deep-merge por capas** en tiempo de ejecución. Las capas posteriores sobreescriben claves individuales; las claves no definidas se heredan de capas anteriores.
+El launch file resuelve la configuración final mediante un **deep-merge por capas**
+en tiempo de ejecución. Cada capa posterior sobreescribe solo las claves que
+define; el resto se hereda de capas anteriores.
 
 ```mermaid
 graph LR
-    A["config/simulation.yaml\n(valores base)"]
+    A["config/simulation.yaml\n(valores base globales)"]
     B["config/sensors/\ncamera.yaml · lidar.yaml"]
     C["config/vehicle/\nx500.yaml"]
-    D["config/levels/\n&lt;level&gt;.yaml"]
-    E["config/profiles/\n&lt;profile&gt;.yaml"]
+    D["config/levels/&lt;level&gt;.yaml\n— estructura base —"]
+    E["config/profiles/&lt;profile&gt;.yaml\n— ajuste fino —"]
 
     A --> M(["deep_merge()"])
     B --> M
@@ -402,20 +457,34 @@ graph LR
     R --> J2["models/x500_inspection/model.sdf.jinja\n→ /tmp/x500_&lt;level&gt;.sdf"]
 ```
 
-**Archivos de configuración principales:**
+### Capas de configuración
 
-| Archivo | Propósito |
-|---|---|
-| `config/simulation.yaml` | Valores base: nombre del vehículo, pose de spawn, puerto DDS, instancia PX4 |
-| `config/levels/minimal.yaml` | Headless, sin sensores salvo IMU/GPS/barómetro |
-| `config/levels/development.yaml` | Fidelidad media, sin ruido, gimbal instantáneo |
-| `config/levels/full.yaml` | Alta fidelidad: PBR, ruido, viento, gimbal realista, distorsión de lente |
-| `config/sensors/camera.yaml` | Intrínsecos de cámara, tasa de actualización, planos de recorte |
-| `config/sensors/lidar.yaml` | Geometría de escaneo LiDAR, tasa de actualización |
-| `config/vehicle/x500.yaml` | Masa del chasis, disposición de motores, geometría del gimbal |
-| `config/profiles/hard_vision.yaml` | Sobreescritura de cámara HD + distorsión completa |
+Las capas se procesan de menor a mayor prioridad. Las capas superiores en la
+tabla sobreescriben a las inferiores clave a clave.
 
-Cualquier clave de una capa más profunda prevalece silenciosamente sobre la misma clave en capas anteriores  sin necesidad de duplicar valores.
+| Prioridad | Archivo(s) | Rol |
+|:---:|---|---|
+| 1 (base) | `config/simulation.yaml` | Valores globales por defecto: nombre del vehículo, pose de spawn, puerto DDS, instancia PX4 |
+| 2 | `config/sensors/camera.yaml` | Intrínsecos de cámara, tasa de actualización, planos de recorte |
+| 2 | `config/sensors/lidar.yaml` | Geometría de escaneo LiDAR, tasa de actualización |
+| 2 | `config/vehicle/x500.yaml` | Masa del chasis, disposición de motores, geometría del gimbal |
+| 3 | `config/levels/<level>.yaml` | **Estructura base** — define física, renderizado, qué sensores están activos, ruido, viento, turbulencia. El nivel es el contrato principal de la simulación. |
+| 4 (top) | `config/profiles/<profile>.yaml` | **Ajuste fino** — sobreescribe únicamente las claves que especifica. Puede modificar cualquier sección de la config. Se aplica al final, por lo que siempre tiene la última palabra. |
+
+### Extensibilidad
+
+Añadir un nuevo nivel o perfil es una operación de un solo paso:
+
+```
+# Nuevo nivel:
+config/levels/high_speed.yaml   →  disponible como level:=high_speed
+
+# Nuevo perfil:
+config/profiles/no_wind.yaml    →  disponible como profile:=no_wind
+```
+
+No hay listas de opciones válidas hardcodeadas en el código. El launch file
+descubre los archivos mediante glob en tiempo de inicio.
 
 ---
 

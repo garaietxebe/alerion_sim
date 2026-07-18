@@ -65,8 +65,7 @@ def load_config(level: str, profile: str = "auto") -> dict:
       2. config/sensors/*.yaml
       3. config/vehicle/x500.yaml
       4. config/levels/<level>.yaml
-      5. config/profiles/<profile>.yaml   (if file exists)
-      6. profile inline override   (navigation | vision | auto)
+      5. config/profiles/<profile>.yaml   (skipped when profile='auto')
     """
 
     def _load(path: Path) -> dict:
@@ -90,13 +89,6 @@ def load_config(level: str, profile: str = "auto") -> dict:
     profile_file = _CONFIG_DIR / "profiles" / f"{profile}.yaml"
     if profile_file.exists():
         cfg = _deep_merge(cfg, _load(profile_file))
-
-    if profile == "navigation":
-        cfg.setdefault("sensors", {}).setdefault("lidar", {})["enabled"] = True
-        cfg.setdefault("sensors", {}).setdefault("camera", {})["enabled"] = False
-    elif profile == "vision":
-        cfg.setdefault("sensors", {}).setdefault("lidar", {})["enabled"] = False
-        cfg.setdefault("sensors", {}).setdefault("camera", {})["enabled"] = True
 
     # ── Cross-validation ────────────────────────────────────────────────────
     _rend  = cfg.get("rendering", {})
@@ -132,12 +124,6 @@ def load_config(level: str, profile: str = "auto") -> dict:
             "  The camera plugin requires the Gazebo renderer to be active. "
             "No image data will be produced.\n"
             "  Set rendering.enabled: true or disable the camera sensor.\n"
-        )
-    if _wind.get("turbulence", {}).get("enabled", False) and not _wind.get("enabled", False):
-        print(
-            "\n[alerion_sim] WARNING: wind.turbulence.enabled=true but wind.enabled=false.\n"
-            "  The turbulence node is gated by wind.enabled — turbulence will not start.\n"
-            "  Set wind.enabled: true or remove the turbulence block.\n"
         )
 
     return cfg
@@ -181,6 +167,7 @@ def launch_setup(context: Any, *args: Any, **kwargs: Any) -> list[Any]:
     lidar_cfg = sens.get("lidar", {})
     camera_cfg = sens.get("camera", {})
     cam_full_cfg = cfg.get("camera", {})  # full camera/gimbal params (camera.yaml + level overrides)
+    turb_cfg = cfg.get("turbulence", {})
 
     # 1 render del mundo
 
@@ -578,8 +565,10 @@ def launch_setup(context: Any, *args: Any, **kwargs: Any) -> list[Any]:
 
     # Wind turbulence node
 
-    turb_cfg = wind.get("turbulence", {})
-    if wind.get("enabled", False) and turb_cfg.get("enabled", False):
+    # Turbulence node — independent of mean wind.
+    # mean_x/y/z are the baseline the Dryden filter oscillates around;
+    # they default to 0 if wind is disabled (pure turbulence around calm air).
+    if turb_cfg.get("enabled", False):
         actions.append(
             Node(
                 package="alerion_sim",
@@ -594,6 +583,7 @@ def launch_setup(context: Any, *args: Any, **kwargs: Any) -> list[Any]:
                     "update_rate":      turb_cfg.get("update_rate", 10.0),
                     "world_name":       turb_cfg.get("world_name", "inspection"),
                     "odom_topic":       f"/model/{gz_model_name}/odometry",
+                    "model_name":       gz_model_name,
                 }],
                 output="screen",
             )

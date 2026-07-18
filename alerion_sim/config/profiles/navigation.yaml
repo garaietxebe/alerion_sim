@@ -1,0 +1,9 @@
+# Perfil: navigation
+# LiDAR activo, cámara desactivada.
+# Uso: profile:=navigation sobre cualquier nivel con GUI.
+
+sensors:
+  lidar:
+    enabled: true
+  camera:
+    enabled: false
