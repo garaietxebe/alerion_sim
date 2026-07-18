@@ -14,7 +14,7 @@ physics:
 
 rendering:
   enabled: true
-  scene_enabled: false          # include warehouse, helipad and other scene objects
+  scene_enabled: true          
   headless: false
   shadows: true
   pbr: true
