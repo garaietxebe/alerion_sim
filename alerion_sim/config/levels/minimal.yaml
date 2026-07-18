@@ -17,9 +17,11 @@ physics:
   max_step_size: 0.004
 
 rendering:
-  enabled: false         # headless: Gazebo se lanza con -s
-  scene_enabled: true   # no scene objects (warehouse, helipad…) — gpu_lidar needs this true to see geometry
-  headless: true         # añade flag -s a gz sim (server-only, sin GUI)
+  enabled: false              # headless: Gazebo se lanza con -s
+  scene_enabled: true         # gpu_lidar necesita geometría; mantener true aunque no haya GUI
+  headless: true              # añade flag -s a gz sim (server-only, sin GUI)
+  headless_rendering: false   # EGL offscreen rendering — activar con profile:=lidar_scan
+                              # para tener gpu_lidar sin abrir ventana ni necesitar display
   shadows: false
   pbr: false
 

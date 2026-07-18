@@ -1,0 +1,26 @@
+# Perfil: lidar_scan
+# Activa el LiDAR y el renderizador EGL offscreen para que gpu_lidar pueda
+# lanzar rayos sin abrir ninguna ventana ni necesitar un servidor de display.
+#
+# Diseñado para usarse sobre minimal, donde el renderizador está completamente
+# desactivado (-s). Este perfil activa ogre2 en modo EGL surfaceless mediante
+# el flag --headless-rendering de Gazebo, que habla directamente con el driver
+# de la GPU sin pasar por X11/Wayland.
+#
+# Sobre development o full es un no-op para el renderizador (ya está activo)
+# y solo activa el sensor LiDAR.
+#
+# Uso:
+#   docker compose run --rm sim level:=minimal profile:=lidar_scan
+#
+# Requisito: driver GPU con soporte EGL (AMD con Mesa radeonsi, NVIDIA con
+# libnvidia-egl). El passthrough de GPU ya configurado en los overlay files
+# de Docker Compose cubre este requisito en ambas plataformas.
+
+sensors:
+  lidar:
+    enabled: true
+
+rendering:
+  headless_rendering: true  # EGL offscreen — ogre2 activo, sin ventana, sin display
+  scene_enabled: true       # incluye la geometría del entorno para que haya algo que escanear

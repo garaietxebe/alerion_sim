@@ -94,19 +94,25 @@ def load_config(level: str, profile: str = "auto") -> dict:
     _rend  = cfg.get("rendering", {})
     _sens  = cfg.get("sensors", {})
     _scene = _rend.get("scene_enabled", True)
-    _gui   = _rend.get("enabled", True)
+    _gui              = _rend.get("enabled", True)
+    _headless_render  = _rend.get("headless_rendering", False)
+    # renderer is active either when the full GUI is on OR when EGL headless is requested
+    _renderer_active  = _gui or _headless_render
 
     _lidar_on  = _sens.get("lidar",  {}).get("enabled", False)
     _camera_on = _sens.get("camera", {}).get("enabled", False)
     _wind      = cfg.get("wind", {})
 
-    if _lidar_on and not _gui:
+    if _lidar_on and not _renderer_active:
         print(
-            "\n[alerion_sim] WARNING: sensors.lidar.enabled=true but "
-            "rendering.enabled=false.\n"
-            "  gpu_lidar requires the ogre2 rendering system — launching Gazebo in\n"
-            "  server-only mode (-s) disables it entirely. The sensor will not produce data.\n"
-            "  Set rendering.enabled: true (headless: true is fine) or disable lidar.\n"
+            "\n[alerion_sim] WARNING: sensors.lidar.enabled=true but the ogre2 "
+            "renderer is not active.\n"
+            "  gpu_lidar requires the ogre2 rendering system to cast rays — without it "
+            "the sensor\n"
+            "  will not produce any data.  Options:\n"
+            "    rendering.enabled: true          — full GUI + rendering\n"
+            "    rendering.headless_rendering: true — EGL offscreen rendering, no window\n"
+            "  Or use profile:=lidar_scan which sets headless_rendering automatically.\n"
         )
     if _lidar_on and not _scene:
         print(
@@ -117,13 +123,13 @@ def load_config(level: str, profile: str = "auto") -> dict:
             "  will only see the ground plane. "
             "Set rendering.scene_enabled: true in the level config.\n"
         )
-    if _camera_on and not _gui:
+    if _camera_on and not _renderer_active:
         print(
-            "\n[alerion_sim] WARNING: sensors.camera.enabled=true but "
-            "rendering.enabled=false.\n"
+            "\n[alerion_sim] WARNING: sensors.camera.enabled=true but the ogre2 "
+            "renderer is not active.\n"
             "  The camera plugin requires the Gazebo renderer to be active. "
             "No image data will be produced.\n"
-            "  Set rendering.enabled: true or disable the camera sensor.\n"
+            "  Set rendering.enabled: true or rendering.headless_rendering: true.\n"
         )
 
     return cfg
@@ -212,11 +218,22 @@ def launch_setup(context: Any, *args: Any, **kwargs: Any) -> list[Any]:
     print(f"[alerion_sim] Camera active : {camera_cfg.get('enabled', False)}")
     print(f"[alerion_sim] Physics       : {phys.get('enabled', True)}")
     print(f"[alerion_sim] Wind          : {wind.get('enabled', False)}")
-    print(f"[alerion_sim] PX4 SITL      : {px4.get('start_px4', True)}\n")
+    print(f"[alerion_sim] PX4 SITL      : {px4.get('start_px4', True)}")
+    _rend_gui      = rend.get("enabled", True)
+    _rend_egl      = rend.get("headless_rendering", False)
+    _render_mode = (
+        "GUI"                        if _rend_gui else
+        "EGL headless (--headless-rendering)" if _rend_egl else
+        "server-only (no rendering)"
+    )
+    print(f"[alerion_sim] Renderer      : {_render_mode}\n")
 
     gz_args = ["-r"]
     if rend.get("headless", False):
-        gz_args += ["-s"]
+        if rend.get("headless_rendering", False):
+            gz_args += ["-s", "--headless-rendering"]
+        else:
+            gz_args += ["-s"]
 
     actions = []
 

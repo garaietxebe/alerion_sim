@@ -1,19 +1,21 @@
 """
 RViz2 visualisation launch file.
 
-Loads the per-level RViz2 config from config/rviz/<level>.rviz so that
-the visual layout automatically matches the fidelity of the running simulation.
+Config resolution order (first match wins):
+  1. config/rviz/<profile>.rviz   — profile-specific layout (e.g. lidar_scan.rviz)
+  2. config/rviz/<level>.rviz     — per-level default
+  3. config/rviz/minimal.rviz     — hard fallback
 
-Run alongside simulation.launch.py:
+Pass the same level and profile that were used for the simulation:
 
   # terminal 1 — simulation
-  ros2 launch alerion_sim simulation.launch.py level:=full
+  ros2 launch alerion_sim simulation.launch.py level:=minimal profile:=lidar_scan
 
-  # terminal 2 — visualisation (same level)
-  ros2 launch alerion_sim rviz.launch.py level:=full
+  # terminal 2 — visualisation
+  ros2 launch alerion_sim rviz.launch.py level:=minimal profile:=lidar_scan
 
-Inside Docker (host must have RViz2 + ROS 2 sourced):
-  ros2 launch /alerion_sim/launch/rviz.launch.py level:=full
+Inside Docker:
+  ros2 launch /alerion_sim/launch/rviz.launch.py level:=minimal profile:=lidar_scan
 
 Fixed frame note
 ----------------
@@ -45,30 +47,52 @@ _FALLBACK   = "minimal"
 
 # Discover available levels from the filesystem so a new config/levels/*.yaml
 # is automatically accepted without editing this file.
-_available_levels = sorted(p.stem for p in (_CONFIG_DIR / "levels").glob("*.yaml"))
+_available_levels   = sorted(p.stem for p in (_CONFIG_DIR / "levels").glob("*.yaml"))
+_available_profiles = ["auto"] + sorted(p.stem for p in (_CONFIG_DIR / "profiles").glob("*.yaml"))
 
 
 def _rviz_setup(context: Any, *args: Any, **kwargs: Any) -> list[Any]:
-    level    = LaunchConfiguration("level").perform(context)
-    rviz_cfg = _RVIZ_DIR / f"{level}.rviz"
+    level   = LaunchConfiguration("level").perform(context)
+    profile = LaunchConfiguration("profile").perform(context)
 
-    if not rviz_cfg.exists():
+    # Resolution order:
+    #   1. config/rviz/<profile>.rviz  — profile has its own dedicated layout
+    #   2. config/rviz/<level>.rviz    — level default
+    #   3. config/rviz/<_FALLBACK>.rviz — hard fallback
+    candidates = []
+    if profile != "auto":
+        candidates.append((_RVIZ_DIR / f"{profile}.rviz", f"profile '{profile}'"))
+    candidates.append((_RVIZ_DIR / f"{level}.rviz", f"level '{level}'"))
+
+    rviz_cfg = None
+    chosen_label = None
+    for path, label in candidates:
+        if path.exists():
+            rviz_cfg = path
+            chosen_label = label
+            break
+
+    if rviz_cfg is None:
         fallback_cfg = _RVIZ_DIR / f"{_FALLBACK}.rviz"
         if not fallback_cfg.exists():
+            tried = "\n    ".join(str(p) for p, _ in candidates)
             raise FileNotFoundError(
-                f"\n[alerion_sim] ERROR: no RViz config for level '{level}' "
-                f"and fallback '{_FALLBACK}' is also missing.\n"
-                f"  Create at least one of:\n"
-                f"    {rviz_cfg}\n"
+                f"\n[alerion_sim] ERROR: no RViz config found for "
+                f"level='{level}' profile='{profile}', and fallback "
+                f"'{_FALLBACK}' is also missing.\n"
+                f"  Tried:\n    {tried}\n"
                 f"    {fallback_cfg}\n"
             )
+        tried = ", ".join(f"'{p.name}'" for p, _ in candidates)
         print(
-            f"\n[alerion_sim] WARNING: no RViz config found for level '{level}'.\n"
-            f"  Expected : {rviz_cfg}\n"
+            f"\n[alerion_sim] WARNING: no RViz config found "
+            f"(tried {tried}).\n"
             f"  Falling back to '{_FALLBACK}' config: {fallback_cfg}\n"
-            f"  To add a dedicated config, create config/rviz/{level}.rviz\n"
         )
         rviz_cfg = fallback_cfg
+        chosen_label = f"fallback '{_FALLBACK}'"
+
+    print(f"[alerion_sim] RViz config   : {rviz_cfg.name}  ({chosen_label})")
 
     return [
         Node(
@@ -90,8 +114,16 @@ def generate_launch_description() -> LaunchDescription:
                 choices=_available_levels,
                 description=(
                     "Fidelity level — any YAML in config/levels/. "
-                    "Selects config/rviz/<level>.rviz "
-                    f"(falls back to '{_FALLBACK}' if missing)."
+                    "Used to select config/rviz/<level>.rviz if no profile config exists."
+                ),
+            ),
+            DeclareLaunchArgument(
+                "profile",
+                default_value="auto",
+                choices=_available_profiles,
+                description=(
+                    "Sensor/config profile. If config/rviz/<profile>.rviz exists "
+                    "it takes priority over the level config."
                 ),
             ),
             OpaqueFunction(function=_rviz_setup),
